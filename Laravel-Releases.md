@@ -1,16 +1,109 @@
 ### [Laravel 12 (February 24th, 2025) - PHP 8.2 - 8.4](https://laravel.com/docs//releases)
 
+- [New Application Starter Kits](https://laravel.com/docs/12.x/starter-kits)
+
 ---
 
 ### [Laravel 11 (March 12th, 2024) - PHP 8.2 - 8.4](https://laravel.com/docs//releases)
+
+- [Named Arguments](https://www.php.net/manual/en/functions.arguments.php#functions.named-arguments)
+- Streamlined Application Structure
+  - bootstrap/app.php
+  - event discovery is now enabled by default
+  - Opt-in API and Broadcast Routing
+    - php artisan install:api
+    - php artisan install:broadcasting
+  - middleware have been moved into the framework itself
+  - Scheduling (routes/console.php) // _Illuminate\Support\Facades\Schedule::command('emails:send')->daily();_
+  - Exception Handling // _withExceptions_
+  - Base Controller Class // _Removed AuthorizesRequests, DispatchesJobs, ValidatesRequests_
+  - SQLite as default database
+  - [Laravel Reverb](https://reverb.laravel.com/)
+    - php artisan reverb:start
+  - Per-Second Rate Limiting // _Limit::perSecond(1)_
+  - Health Routing
+    - ->withRouting(
+    - health: '/up',
+    - )
+  - Graceful Encryption Key Rotation // _APP_PREVIOUS_KEYS_
+  - Automatic Password Rehashing
+    - config/hashing.php
+    - BCRYPT_ROUNDS
+  - [Prompt Validation](https://laravel.com/docs/11.x/prompts)
+  - Queue Interaction Testing
+  - New Artisan Commands // _make:class, make:enum, make:interface, make:trait_
+  - Model Casts Improvements
+  - The once Function
+  - Improved Performance When Testing With In-Memory Databases
+  - Improved Support for MariaDB
+  - Inspecting Databases and Improved Schema Operations // _Schema::getTables()_
 
 ---
 
 ### [Laravel 10 (February 14th, 2023) - PHP 8.1 - 8.3](https://laravel.com/docs//releases)
 
+- Types
+- Generate Secure Passwords //Illuminate\Support\Str::password()
+- [Laravel Pennant](https://laravel.com/docs/10.x/pennant)
+  - Laravel\Pennant\Feature::define()
+  - php artisan pennant:feature NewApi
+  - Laravel\Pennant\Feature::active()
+- Process Interaction
+  - $result = Illuminate\Support\Facades\Process::run('ls -la');
+  - return $result->output();
+- Test Profiling // _php artisan test --profile_
+- Pest Scaffolding // _laravel new application --pest_
+- Quicker Project Scaffolding // // _laravel new application --breeze_
+- Generator CLI Prompts
+- Horizon / Telescope Facelift
+- registerPolicies method of the AuthServiceProvider is now invoked automatically
+
 ---
 
-### [Laravel 9 (February 8th, 2022) / PHP 8.0 - 8.1](https://laravel.com/docs//releases)
+### [Laravel 9 (February 8th, 2022) / PHP 8.0 - 8.2](https://laravel.com/docs//releases)
+
+- Anonymous Migration Classes
+- Improved Eloquent Accessors / Mutators
+  - Illuminate\Database\Eloquent\Casts\Attribute
+  - return new Attribute(
+  - get: fn ($value) => strtoupper($value),
+  - set: fn ($value) => $value,
+  - );
+- Enum Eloquent Attribute Casting
+  - $table->enum('difficulty', ['easy', 'hard']);
+  - $table->enum('difficulty', Enum::class);
+- Implicit Route Bindings With Enums
+- Forced Scoping Of Route Bindings
+  - scopeBindings
+- Controller Route Groups
+  - Route::controller(Controller::class)->group(function () {
+  - ...
+  - });
+- Full Text Indexes / Where Clauses
+  - $table->text('bio')->fullText();
+  - DB::table('users')->whereFullText('bio', 'web developer')->get();
+  - Laravel\Scout\Attributes\SearchUsingFullText;
+  - Laravel\Scout\Attributes\SearchUsingPrefix;
+  - #[SearchUsingPrefix(['id', 'email'])]
+  - #[SearchUsingFullText(['bio'])]
+- [Laravel Scout Database Engine](https://laravel.com/docs/9.x/scout#database-engine)
+  - toSearchableArray
+- Rendering Inline Blade Templates
+- Slot Name Shortcut // _\<x-slot:title>_
+- Checked / Selected Blade Directives
+  - @checked(old('active', $user->active))
+  - @selected(old('version') == $version)
+- Bootstrap 5 Pagination Views
+  - Paginator::useBootstrapFive();
+- Improved Validation Of Nested Array Data
+  - Rule::forEach
+- [Laravel Breeze API](https://laravel.com/docs/9.x/starter-kits#breeze-and-next) & [Next.js](https://github.com/laravel/breeze-next)
+- Improved Ignition Exception Page
+- Improved route:list CLI Output
+- Test Coverage Using Artisan test Command // _php artisan test --coverage requires Xdebug_
+- Soketi Echo Server
+- Improved Collections IDE Support
+- New Helpers // _str and to_route_
 
 ---
 
@@ -59,6 +152,7 @@
   - Route::get('/users', [UserController::class, 'index']);
   - action([UserController::class, 'index']);
   - return Redirect::action([UserController::class, 'index']);
+  - [Laravel Mix](https://github.com/laravel-mix/laravel-mix)
 
 ---
 
@@ -100,6 +194,7 @@
 - Stub Customization
   - php artisan stub:publish
 - Queue maxExceptions Configuration
+- Illuminate\Support\Facades\Blade::withoutComponentTags() // _AppServiceProvider::boot_
 
 ---
 
@@ -125,3 +220,4 @@
 - Password Confirmation
   - password.confirm // _middleware_
   - auth.password\*timeout // _configuration option_
+- laravel/helpers
