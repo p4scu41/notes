@@ -9,34 +9,50 @@
 - [Named Arguments](https://www.php.net/manual/en/functions.arguments.php#functions.named-arguments)
 - Streamlined Application Structure
   - bootstrap/app.php
-  - event discovery is now enabled by default
+    - withProviders(array $providers = [], bool $withBootstrapProviders = true) // _Register all the providers from bootstrap\providers.php_
+    - withEvents(iterable|bool $discover = true) // _Autodiscovery event listeners from app\Listeners_
+    - withRouting($web, $api, $commands, $channels, $pages, $health, $apiPrefix) // _Add php route files_
+    - withMiddleware(function (Middleware $middleware) { ... }) // _\$middleware\->web()_
+    - withCommands(array $commands = []) // _Autoregister all the commands from app\Console\Commands_
+    - withExceptions(function (Exceptions $exceptions) { ... }) // _Exception Handling $exceptions\->dontFlash(), replace App\Exceptions\Handler_
   - Opt-in API and Broadcast Routing
-    - php artisan install:api
-    - php artisan install:broadcasting
-  - middleware have been moved into the framework itself
-  - Scheduling (routes/console.php) // _Illuminate\Support\Facades\Schedule::command('emails:send')->daily();_
-  - Exception Handling // _withExceptions_
+    - php artisan install:api // _withRouting add api_
+    - php artisan install:broadcasting // _withRouting add channels, resources\js add echo.js_
+  - Built-in ServiceProvides have been moved into the framework itself
+    - AuthServiceProvider, BroadcastServiceProvider, EventServiceProvider, RouteServiceProvider
+  - Built-in Middlewares have been moved into the framework itself
+    - Authenticate, EncryptCookies, PreventRequestsDuringMaintenance, RedirectIfAuthenticated, TrimStrings, TrustHosts, TrustProxies, VerifyCsrfToken
+  - Config the built-in Middlewares in AppServiceProvider->boot()
+    - Illuminate\Foundation\Http\Middleware\TrimStrings::except()
+    - Illuminate\Auth\Middleware\RedirectIfAuthenticated::redirectUsing(fn ($request) => route('home'))
+  - Laravel package -> ServiceProvider::addProviderToBootstrapFile
+  - Scheduling (routes/console.php)
+    - Illuminate\Support\Facades\Schedule::command('emails:send')->daily()
+    - Illuminate\Support\Facades\Schedule::call(Command::class)->daily()
   - Base Controller Class // _Removed AuthorizesRequests, DispatchesJobs, ValidatesRequests_
   - SQLite as default database
-  - [Laravel Reverb](https://reverb.laravel.com/)
-    - php artisan reverb:start
-  - Per-Second Rate Limiting // _Limit::perSecond(1)_
-  - Health Routing
-    - ->withRouting(
-    - health: '/up',
-    - )
-  - Graceful Encryption Key Rotation // _APP_PREVIOUS_KEYS_
-  - Automatic Password Rehashing
-    - config/hashing.php
-    - BCRYPT_ROUNDS
-  - [Prompt Validation](https://laravel.com/docs/11.x/prompts)
-  - Queue Interaction Testing
-  - New Artisan Commands // _make:class, make:enum, make:interface, make:trait_
-  - Model Casts Improvements
-  - The once Function
-  - Improved Performance When Testing With In-Memory Databases
-  - Improved Support for MariaDB
-  - Inspecting Databases and Improved Schema Operations // _Schema::getTables()_
+  - Fewer Config Files // _php artisan config:publish_
+- [Laravel Reverb](https://reverb.laravel.com/)
+  - php artisan reverb:start
+- Per-Second Rate Limiting // _Limit::perSecond(1)_
+- Health Routing // _/up_
+- Graceful Encryption Key Rotation // _APP_PREVIOUS_KEYS_
+- Automatic Password Rehashing
+  - config/hashing.php
+  - BCRYPT_ROUNDS
+- [Prompt Validation](https://laravel.com/docs/11.x/prompts)
+- Queue Interaction Testing // _withFakeQueueInteractions_
+- New Artisan Commands // _make:class, make:enum, make:interface, make:trait_
+- Model Casts Improvements
+  - Illuminate\Database\Eloquent\Casts\AsEnumCollection::of(ClassName::class)
+  - Illuminate\Database\Eloquent\Casts\AsCollection::using(ClassName::class)
+  - protected function casts() // _ Model_
+- The once Function Memoization
+- Inspecting Databases and Improved Schema Operations // _Schema::getTables()_
+- Trait Illuminate\Support\Traits\Dumpable // _dump, dd_
+- Limitless Limits for Eager Loading
+  - User::with(['posts' => fn ($query) => $query->latest()->limit(5)])
+- Retrying Asynchronous Requests // _Http::retry(5)_
 
 ---
 
