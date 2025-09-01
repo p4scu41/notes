@@ -186,10 +186,74 @@ References
 
 ### [Laravel Fortify](https://github.com/laravel/fortify)
 
-- Headless authentication Backend-only, handles the core authentication logic (login, registration, password reset, etc.)
+- Authentication backend implementation, does not provide user interface, registers the routes and controllers needed to implement all of authentication features, including login, registration, password reset, email verification, and more
+- Takes the routes and controllers of starter kits and offers them as a package
 - composer require laravel/fortify
 - php artisan fortify:install
-- php artisan vendor:publish --tag=fortify-config
+- php artisan vendor:publish --tag=fortify-config // _Optinal_
+- php artisan migrate
+- Files created/updated
+  - app/Actions/Fortify
+  - app/Providers/FortifyServiceProvider.php
+  - bootstrap/app.php // _Add App\Providers\FortifyServiceProvider::class_
+  - config/fortify.php // _Laravel\Fortify\Features_
+    - Features::registration
+    - Features::resetPasswords
+    - Features::emailVerification
+    - Features::updateProfileInformation
+    - Features::updatePasswords
+    - Features::twoFactorAuthentication
+    - 'views' => false // _routes that are intended to return views, be careful with password.reset_
+    - limiters.login // _Laravel\Fortify\Actions\EnsureLoginIsNotThrottled_
+  - database/migrations/_add_two_factor_columns_to_users_table.php
+- View's rendering may be customized using methods from Laravel\Fortify\Fortify (FortifyServiceProvider)
+  - Fortify::loginView(fn() => view('auth.login'));
+  - Fortify::authenticateUsing(function (Request $request) { ... })
+  - Fortify::authenticateThrough(function (Request $request) { ... })
+  - $this->app->instance(LogoutResponse::class, new class implements Laravel\Fortify\Contracts\LogoutResponse { ... })
+- Two Factor Authentication
+  - User is required to input a six digit numeric token
+  - Token is generated using a time-based one-time password (TOTP) that can be retrieved from any TOTP compatible application such as Google Authenticator
+  - App\Models\User use Laravel\Fortify\TwoFactorAuthenticatable
+  - /user/two-factor-authentication
+  - session('status') == two-factor-authentication-enabled
+  - $request->user()->twoFactorQrCodeSvg()
+  - GET /user/two-factor-qr-code
+  - POST /user/confirmed-two-factor-authentication
+  - session('status') == two-factor-authentication-confirmed
+  - request->user()->recoveryCodes()
+  - /user/two-factor-recovery-codes
+  - two_factor boolean property
+  - Fortify::twoFactorChallengeView(function () { ... })
+  - disable DELETE /user/two-factor-authentication
+- Registration
+  - Fortify::registerView(function () { ... }) // _FortifyServiceProvider_
+  - App\Actions\Fortify\CreateNewUser
+- Password Reset
+  - Fortify::requestPasswordResetLinkView(function () { ... }) // _FortifyServiceProvider_
+  - session('status')
+  - Fortify::resetPasswordView(function (Request $request) { ... }) // _FortifyServiceProvider_
+  - App\Actions\ResetUserPassword
+- Email Verification
+  - App\Models\User implements Illuminate\Contracts\Auth\MustVerifyEmail
+  - Fortify::verifyEmailView(function () { ... }) // _FortifyServiceProvider_
+  - /email/verification-notification
+  - session('status') == verification-link-sent
+  - middleware(['verified']) // _Illuminate\Auth\Middleware\EnsureEmailIsVerified_
+- Password Confirmation
+  - password.confirm middleware
+  - Fortify::confirmPasswordView(function () { ... }) // _FortifyServiceProvider_
+  -
+
+---
+
+### [Laravel Sanctum](https://github.com/laravel/sanctum)
+
+- API token authentication, issue personal access tokens for API access or manage authentication for SPAs and mobile applications.
+- Managing API tokens and authenticating users using session cookies or tokens
+- Does not provide any routes that handle user registration, password reset, etc.
+- php artisan install:api // _composer require laravel/sanctum_
+- php artisan vendor:publish --tag="sanctum-migrations"
 - php artisan migrate
 
 ---
@@ -204,15 +268,6 @@ References
 - php artisan migrate
 - npm run dev
 - php artisan vendor:publish --tag=jetstream-views
-
----
-
-### [Laravel Sanctum](https://github.com/laravel/sanctum)
-
-- API token authentication, issue personal access tokens for API access or manage authentication for SPAs and mobile applications.
-- php artisan install:api // _composer require laravel/sanctum_
-- php artisan vendor:publish --tag="sanctum-migrations"
-- php artisan migrate
 
 ---
 
