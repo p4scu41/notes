@@ -243,7 +243,6 @@ References
 - Password Confirmation
   - password.confirm middleware
   - Fortify::confirmPasswordView(function () { ... }) // _FortifyServiceProvider_
-  -
 
 ---
 
@@ -252,9 +251,83 @@ References
 - API token authentication, issue personal access tokens for API access or manage authentication for SPAs and mobile applications.
 - Managing API tokens and authenticating users using session cookies or tokens
 - Does not provide any routes that handle user registration, password reset, etc.
+- Allows each user of your application to generate multiple API tokens
+- Tokens may be granted abilities/scopes which specify which actions are allowed to perform
+- Solve two separate problems
+  - API Tokens
+    - Issue API tokens (Similar to personal access tokens from GitHub)
+    - Store user API tokens in a table and authenticate HTTP requests via the Authorization header
+  - SPA Authentication
+    - Uses built-in cookie based session authentication services
+    - Utilizes web authentication guard
+    - Will only attempt to authenticate using cookies when the incoming request originates from your own SPA frontend
+    - Examines an incoming HTTP request, it will first check for an authentication cookie and, if none is present, will then examine the Authorization header for a valid API token
+    - Provides CSRF protection, session authentication, and protects against leakage of the authentication credentials via XSS
 - php artisan install:api // _composer require laravel/sanctum_
-- php artisan vendor:publish --tag="sanctum-migrations"
-- php artisan migrate
+- php artisan migrate:fresh
+- Overriding Default Models
+  - PersonalAccessToken extends Laravel\Sanctum\PersonalAccessToken
+  - Laravel\Sanctum\Sanctum::usePersonalAccessTokenModel(PersonalAccessToken::class) // _AppServiceProvider_
+- API Token Authentication
+  - The token should be included in the Authorization header as a Bearer token
+  - API tokens are hashed using SHA-256
+  - Sanctum authentication guard ensure that requests are authenticated as either stateful, cookie authenticated requests or contain a valid API token header
+  - Sanctum will first attempt to authenticate requests using session authentication cookie. If that cookie is not present then will attempt to authenticate using a token in the request's Authorization header
+  - User model should use Laravel\Sanctum\HasApiTokens
+  - $token = $request->user()->createToken($request->token_name) // _Laravel\Sanctum\NewAccessToken_
+  - return ['token' => $token->plainTextToken]
+  - $user->tokens
+  - Token Abilities
+    - $user->createToken('token-name', ['server:update'])->plainTextToken
+    - $user->tokenCan('server:update') or $user->tokenCant('server:update')
+    - Middleware $middleware->alias([...]) // _bootstrap/app.php_
+      - 'abilities' => Laravel\Sanctum\Http\Middleware\CheckAbilities::class
+      - 'ability' => Laravel\Sanctum\Http\Middleware\CheckForAnyAbility::class
+    - Route::middleware(['auth:sanctum', 'abilities:check-status,place-orders']) // _token has all the abilities_
+    - Route::middleware(['auth:sanctum', 'ability:check-status,place-orders']) // _token has at least one of the abilities_
+    - tokenCan method will always return true if the authenticated request was from your first-party SPA and you are using Sanctum's built-in SPA authentication
+    - Revoking Tokens
+      - $user->tokens()->delete()
+      - $request->user()->currentAccessToken()->delete()
+      - $user->tokens()->where('id', $tokenId)->delete()
+    - Token Expiration
+      - By default, never expire
+      - It can be set in sanctum configuration file: 'expiration' => 525600
+      - Set as third argument: return $user->createToken('token-name', ['*'], now()->addWeek())->plainTextToken
+      - Schedule::command('sanctum:prune-expired --hours=24')->daily()
+- SPA Authentication
+  - Your SPA and API must share the same top-level domain
+  - Send the Accept: application/json header and either the Referer or Origin header
+  - stateful -> sanctum configuration file // _domains your SPA will be making requests from_
+  - Include the port number with the domain
+  - Sanctum::currentApplicationUrlWithPort() //  _return  current application URL from the APP_URL_
+  - Sanctum::currentRequestHost() // _inject a placeholder into the stateful domain list_
+  - $middleware->statefulApi() // _bootstrap/app.php_
+  - config/cors.php // _php artisan config:publish cors_
+    - supports_credentials // _Access-Control-Allow-Credentials: True_
+  - resources/js/bootstrap.js
+    - axios.defaults.withCredentials = true
+    - axios.defaults.withXSRFToken = true
+  - 'domain' => '.domain.com' // _config/session.php_
+  - Authenticating
+    - first make a request to /sanctum/csrf-cookie to initialize CSRF protection
+    - axios.get('/sanctum/csrf-cookie').then(response => { ... })
+    - set an XSRF-TOKEN cookie containing the current CSRF token
+    - This token should then be URL decoded and passed in an X-XSRF-TOKEN header on subsequent requests
+    - Once CSRF protection is set, make a POST request to /login route, you could use Laravel Fortify implementation
+    - Route::middleware('auth:sanctum') // _routes/api.php_
+- Mobile Application Authentication
+  - Route::post('/sanctum/token', function (Request $request) { ... })
+  - return $user->createToken($request->device_name)->plainTextToken
+  - The mobile application should pass the token in the Authorization header as a Bearer token
+- Testing
+  - Sanctum::actingAs
+- Files created/updated
+- app/Models/User.php // _Laravel\Sanctum\HasApiTokens_
+- bootstrap/app.php // _api: __DIR__.'/../routes/api.php'_
+- config/sanctum.php
+- database/migrations/2025_09_01_202245_create_personal_access_tokens_table.php
+- routes/api.php
 
 ---
 
