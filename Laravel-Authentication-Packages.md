@@ -323,24 +323,86 @@ References
 - Testing
   - Sanctum::actingAs
 - Files created/updated
-- app/Models/User.php // _Laravel\Sanctum\HasApiTokens_
-- bootstrap/app.php // _api: __DIR__.'/../routes/api.php'_
-- config/sanctum.php
-- database/migrations/2025_09_01_202245_create_personal_access_tokens_table.php
-- routes/api.php
+  - app/Models/User.php // _Laravel\Sanctum\HasApiTokens_
+  - bootstrap/app.php // _api: __DIR__.'/../routes/api.php'_
+  - config/sanctum.php
+  - database/migrations/2025_09_01_202245_create_personal_access_tokens_table.php
+  - routes/api.php
+- First-Party Request
+  - Comes from a client that is part of your own application ecosystem
+  - Your own web application's UI
+  - Internal services or microservices
+  - Often utilize session-based authentication (e.g., Laravel Sanctum with session cookies for web UIs)
+  - Have a high degree of trust and control over the client application
+- Third-Party Request
+  - Comes from an external client or service that is not directly controlled or owned by your application
+  - External APIs or integrations
+  - Public API consumers
+  - Often utilize token-based authentication (e.g., API tokens, OAuth tokens) for secure access
+  - Require careful consideration of security, rate limiting, and access control, as the client is external and less trusted
 
 ---
 
 ### [Laravel Jetstream](https://jetstream.laravel.com)
 
-- Feature-rich, Livewire/Inertia + Teams, API support via Fortify/Sanctum
+- Implements login, registration, email verification, two-factor authentication, session management, API via Laravel Sanctum, and optional team management features
+- Is designed using Tailwind CSS and offers your choice of Livewire or Inertia scaffolding
+- Uses Laravel Fortify for login, registration, password reset, email verification, and more
+- Jetstream implements the user interface built on top of the Fortify authentication backend
+- In contrast to Laravel Breeze, Jetstream's functionality is customized via "Action" classes, app/Actions directory
+- Action classes perform a single action and correspond to a single Jetstream or Fortify feature
+- Doesn't support TypeScript
+- Jetstream publish views and classes to your application
+  - resources/views // _Livewire_
+  - resources/js/Pages // _Inertia_
+- Layout and Menu: resources/js/Layouts/AppLayout.vue
+- Dashboard: resources/js/Pages/Dashboard.vue
 - composer require laravel/jetstream
+- Tailwind: postcss.config.js and tailwind.config.js
+- User Profile: resources/js/Pages/Profile/Show.vue
+- Create Team: App\Actions\Jetstream\CreateTeam -> resources/js/Pages/Teams/Create.vue
+- Team Settings: resources/js/Pages/Teams/Show.vue
+- Banner Alerts
+  - resources/js/Components/Banner.vue
+  - $request->session()->flash('flash.banner', 'Yay it works!')
+  - $request->session()->flash('flash.bannerStyle', 'success')
+  - return redirect()->route('subscriptions')->banner('Subscription created successfully.');
+  - return redirect()->route('subscriptions')->warningBanner('Subscription pending approval.');
+- Customize logo
+  - resources/js/Components/ApplicationLogo.vue
+  - resources/js/Components/ApplicationMark.vue
+  - resources/js/Components/AuthenticationCardLogo.vue
+- Integration with Laravel Sanctum
+  - Features::api() // _config/jetstream.php_
+  - Jetstream::defaultApiTokenPermissions(['read']); // _App\Providers\JetstreamServiceProvider_
+  - Jetstream::permissions // _App\Providers\JetstreamServiceProvider_
+  - App\Models\User use Laravel\Sanctum\HasApiTokens // _$request->user()->tokenCan('post:update')_
+  - Every request will be associated with a Sanctum token
+  - request to routes/web.php will be authenticated by Sanctum through an authenticated session cookie based guard
+  - first-party request, the tokenCan method will always return true, policies will determine if the token has been granted permission to perform the action
+- Authentication ​
+  - scaffolds the login, two-factor login, registration, password reset, and email verification ​
+  - Fortify defines the routes and controllers for implementing the authentication while the Jetstream UI makes requests to those routes
+  - config/fortify.php
+  - resources/js/Pages/Auth/Login.vue
 - php artisan jetstream:install inertia --teams --dark
+  - Which Jetstream stack would you like to install
+    - [x] Vue with Inertia
+    - [ ] Livewire
+  - Would you like any optional features
+    - [x] API support
+    - [x] Dark mode
+    - [x] Email verification
+    - [ ] Inertia SSR
+    - [x] Team support
+  - Which testing framework do you prefer
+    - [x] Pest
+    - [ ] PHPUnit
 - npm install --legacy-peer-deps
 - npm run build
 - php artisan migrate
 - npm run dev
-- php artisan vendor:publish --tag=jetstream-views
+- Files created/updated
 
 ---
 
