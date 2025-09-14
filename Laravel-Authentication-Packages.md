@@ -22,7 +22,7 @@ References
 
 - Starter Kits uses Breeze
 - Minimalist, lightweight authentication scaffolding
-- Includes login, registration, password reset, email verification, and password confirmation
+- Includes login, registration, password reset, forgot password, email verification, and password confirmation
 - Includes a simple "profile" page where the user may update their name, email address, and password
 - Blade templates styled with Tailwind CSS
 - Provides scaffolding options based on Livewire or Inertia (Vue or React)
@@ -37,8 +37,8 @@ References
     - [ ] Blade with Alpine
     - [ ] Livewire (Volt Class API) with Alpine
     - [ ] Livewire (Volt Functional API) with Alpine
-    - [x] React with Inertia
-    - [ ] Vue with Inertia
+    - [ ] React with Inertia
+    - [x] Vue with Inertia
     - [ ] API only
   - Would you like any optional features?
     - [x] Dark mode
@@ -385,6 +385,7 @@ References
   - Fortify defines the routes and controllers for implementing the authentication while the Jetstream UI makes requests to those routes
   - config/fortify.php
   - resources/js/Pages/Auth/Login.vue
+- composer require laravel/jetstream
 - php artisan jetstream:install inertia --teams --dark
   - Which Jetstream stack would you like to install
     - [x] Vue with Inertia

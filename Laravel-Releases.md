@@ -33,6 +33,7 @@
   - SQLite as default database
   - Fewer Config Files // _php artisan config:publish_
 - [Laravel Reverb](https://reverb.laravel.com/)
+  - php artisan install:broadcasting
   - php artisan reverb:start
 - Per-Second Rate Limiting // _Limit::perSecond(1)_
 - Health Routing // _/up_
