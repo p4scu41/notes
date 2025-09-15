@@ -60,24 +60,31 @@
   ```
   php artisan make:controller Api/v1/AuthController --resource
   ```
-  - Auth::once($request->only(['email', 'password']))
-  - Auth::user()->createToken('token')
-  - Auth::user()->currentAccessToken()->delete()
+  ```php
+  Auth::once($request->only(['email', 'password']))
+  Auth::user()->createToken('token')
+  Auth::user()->currentAccessToken()->delete()
+  ```
 - Authorization
-  - Gate::define('update-post', [PostPolicy::class, 'update']);
-  - App\Policies\BookPolicy
-  - return $user->tokenCanAny(['books-admin', 'books-visitor', '*']);
-  - public function tokenCanAny(array $abilities) : bool
-    - return $this->accessToken && array_intersect($abilities, $this->accessToken->abilities);
+  ```php
+  Gate::define('update-post', [PostPolicy::class, 'update']);
+  App\Policies\BookPolicy
+  return $user->tokenCanAny(['books-admin', 'books-visitor', '*']);
+  public function tokenCanAny(array $abilities) : bool {
+    return $this->accessToken && array_intersect($abilities, $this->accessToken->abilities);
+  }
   - Gate::authorize('view', $book);
+  ```
   - Tests
-    - Sanctum::actingAs($user);
-    - $user->createToken('token', ['books-admin']);
-    - $user->withAccessToken($user->tokens->first());
-    - $user = User::factory()->create();
-    - $user->createToken('token', ['guest']);
-    - $user->withAccessToken($user->tokens->first());
-    - Auth::setUser($user);
+  ```php
+    Sanctum::actingAs($user);
+    $user->createToken('token', ['books-admin']);
+    $user->withAccessToken($user->tokens->first());
+    $user = User::factory()->create();
+    $user->createToken('token', ['guest']);
+    $user->withAccessToken($user->tokens->first());
+    Auth::setUser($user);
+  ```
 - Api Documentation
   - composer require dedoc/scramble
   - /docs/api
@@ -85,9 +92,11 @@
   ```
   php artisan make:resource BookResource
   ```
-  - return new BookResource($book);
-  - return BookResource::collection(Book::paginate());
-  - return (new BookResource($book))->response()->setStatusCode(Response::HTTP_CREATED);
+  ```php
+  return new BookResource($book);
+  return BookResource::collection(Book::paginate());
+  return (new BookResource($book))->response()->setStatusCode(Response::HTTP_CREATED);
+  ```
 - Queue
   - QUEUE_CONNECTION=database
   ```
@@ -111,12 +120,14 @@
   ```
   - App\Mail\BookCreated => content
   - resources/views/mail/book-created.blade.php
-  - Mail::to(Auth::user())->send(new BookDeleted($book));
-  - Mail::to($request->user())->queue((new BookCreated($book))->afterCommit());
-  - return (new BookCreated(Book::first()))->render();
-  - Mail::fake();
-  - Mail::assertSent(BookDeleted::class);
-  - Mail::assertQueued(BookCreated::class);
+  ```php
+  Mail::to(Auth::user())->send(new BookDeleted($book));
+  Mail::to($request->user())->queue((new BookCreated($book))->afterCommit());
+  return (new BookCreated(Book::first()))->render();
+  Mail::fake();
+  Mail::assertSent(BookDeleted::class);
+  Mail::assertQueued(BookCreated::class);
+  ```
 - Notifications
   - https://laravel-notification-channels.com/
   ```
@@ -129,7 +140,95 @@
   - __construct() => $this->afterCommit();
   - to*Mail*
   - routeNotificationFor*Mail*
-  -
+- Event and Listener
+  ```
+  php artisan make:event BookRegistered
+  php artisan make:listen BookUpdateInventory --event=BookRegistered --pest
+  php artisan event:list
+  php artisan event:cache
+  php artisan event:clear
+  ```
+  - app/Events/BookRegistered.php
+  - app/Listeners/BookUpdateInventory.php
+  - implements Illuminate\Contracts\Queue\ShouldQueue
+  - implements Illuminate\Contracts\Queue\ShouldQueueAfterCommit
+  - use Illuminate\Queue\InteractsWithQueue
+  - implements Illuminate\Contracts\Queue\ShouldBeEncrypted
+  - implements Illuminate\Contracts\Events\ShouldDispatchAfterCommit
 - Broadcast
   - Laravel Echo => Echo.private('App.Models.User.' + userId)
   - import { useEchoNotification } from "@laravel/echo-react/vue";
+- Middleware
+  ```
+  php artisan make:middleware LogRequestsToBook --pest
+  ```
+  - app/Http/Middleware/LogRequestsToBook.php
+  - bootstrap/app.php => withMiddleware
+- Command
+  ```
+  php artisan make:command SendEmails --pest
+  ```
+  - app/Console/Commands/SendEmails.php
+  - implements Illuminate\Contracts\Console\PromptsForMissingInput;
+- Cache
+  ```php
+  $value = Cache::get('key', 'default');
+  $value = Cache::get('key', function () {
+    return DB::table(/* ... */)->get();
+  });
+  Cache::has('key')
+  Cache::add('key', 0, now()->addHours(4));
+  $value = Cache::remember('users', $seconds, function () {
+    return DB::table('users')->get();
+  });
+  $value = Cache::pull('key', 'default');
+  Cache::put('key', 'value', $seconds = 10);
+  Cache::put('key', 'value', now()->addMinutes(10));
+  Cache::forget('key');
+  ```
+- Rate Limiting
+  ```php
+  // app/Providers/AppServiceProvider.php
+  use Illuminate\Cache\RateLimiting\Limit;
+  use Illuminate\Support\Facades\RateLimiter;
+
+  RateLimiter::for('api', function (Request $request) {
+      return Limit::perMinute(3)->by($request->user()?->id ?: $request->ip());
+  });
+
+  // routes/api.php
+  Route::middleware('throttle:api');
+
+  $executed = RateLimiter::attempt(
+      'send-message:'.$user->id,
+      $perMinute = 5,
+      function() {
+          // Send message...
+      },
+      $decayRate = 120,
+  );
+
+  if (! $executed) {
+      return 'Too many messages sent!';
+  }
+  ```
+- Task Scheduling
+  ```
+  php artisan schedule:list
+  php artisan schedule:run
+  php artisan schedule:work
+  ```
+  ```php
+  Schedule::call(function () {
+      \Log::info('Schedule closure');
+  })->name('schedule-closure')->daily();
+
+  Schedule::call(new InvocableClass())->daily();
+
+  Schedule::command(SendEmails::class, ['2'])
+      ->withoutOverlapping()
+      ->runInBackground()
+      ->emailOutputOnFailure('admin@site.com');
+
+  Schedule::job(new BookJob(Book::first()))->everyFiveMinutes();
+  ```
