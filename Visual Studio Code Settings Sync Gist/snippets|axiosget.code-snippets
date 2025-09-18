@@ -1,0 +1,25 @@
+{
+	"axios.get": {
+		"scope": "javascript,typescript,vue",
+		"prefix": "axiosget",
+		"body": [
+			"axios",
+			"\t.get(\"${1:url}\")",
+			"\t.then(response => {",
+			"\t\tresponse.data;${0}",
+			"\t})",
+			"\t.catch(error => {",
+			"\t\tif (error.response) {",
+			"\t\t\tconsole.warn(\"Response error\");",
+			"\t\t\tconsole.log(error.response.status + \" \" + error.response.statusText);",
+			"\t\t} else if (error.request) {",
+			"\t\t\tconsole.warn(\"Request error\");",
+			"\t\t}\n",
+			"\t\tconsole.error(error.name + \": \" + error.message);",
+			"",
+			"\t\treturn Promise.reject(error); // throw error;",
+			"\t});"
+		],
+		"description": "axios.get"
+	}
+}

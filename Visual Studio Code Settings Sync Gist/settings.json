@@ -1,0 +1,96 @@
+{
+    "workbench.startupEditor": "newUntitledFile",
+    "editor.renderWhitespace": "all",
+    "editor.fontSize": 13.5,
+    "files.exclude": {
+        "**/.history": true,
+        "**/.phan": true,
+        "**/.settings": true,
+        "**/.vscode": true,
+        "**/node_modules": true
+    },
+    "editor.lineHeight": 23,
+    "editor.fontLigatures": true,
+    "files.insertFinalNewline": true,
+    "files.trimTrailingWhitespace": true,
+    "files.watcherExclude": {
+        "**/.history/**": true
+    },
+    "workbench.editor.closeOnFileDelete": true,
+    "workbench.editor.highlightModifiedTabs": true,
+    "window.title": "${dirty}${activeEditorMedium}${separator}${rootName}${separator}",
+    "explorer.openEditors.visible": 0,
+    "search.exclude": {
+        "**/.history": true
+    },
+    "search.showLineNumbers": true,
+    "debug.console.fontSize": 13.5,
+    "terminal.integrated.fontWeightBold": "normal",
+    "gitlens.views.repositories.location": "gitlens",
+    "gitlens.views.fileHistory.location": "gitlens",
+    "gitlens.views.lineHistory.location": "gitlens",
+    "gitlens.views.compare.location": "gitlens",
+    "gitlens.views.search.location": "gitlens",
+    "phpcs.executablePath": "/home/usuario/.config/composer/vendor/bin/phpcs",
+    "phpcs.standard": "PSR2,Security,/home/usuario/.config/sublime-text-3/Packages/User/PHPCompatibilityCustom.xml,/home/usuario/.config/sublime-text-3/Packages/User/SlevomatCodingStandardCustom.xml",
+    "phpcs.showSources": true,
+    "phpcs.showWarnings": true,
+    "phpcs.ignorePatterns": [
+        "**/vendor"
+    ],
+    "phpmd.command": "/home/usuario/.config/composer/vendor/bin/phpmd",
+    "phpmd.rules": "/home/usuario/.config/sublime-text-3/Packages/User/PHPMDCustom.xml",
+    "sync.autoUpload": true,
+    "sync.gist": "e039d79258fe010c9fbdeb72cb3ee8d5",
+    "workbench.tree.indent": 15,
+    "workbench.list.horizontalScrolling": true,
+    "workbench.tree.renderIndentGuides": "always",
+    "editor.minimap.enabled": false,
+    "window.menuBarVisibility": "toggle",
+    "explorer.autoReveal": false,
+    "phan.enableCompletion": false,
+    "phan.enableGoToDefinition": false,
+    "phan.enableHover": false,
+    "phan.phanScriptPath": "/home/usuario/.config/composer/vendor/bin/phan",
+    "phan.analyzedProjectDirectory": [
+    ],
+    "emmet.includeLanguages": {
+        "vue": "html",
+        "vue-html": "html"
+    },
+    "eslint.options": {
+        "extensions": [".js", ".vue"]
+    },
+    "eslint.alwaysShowStatus": true,
+    "eslint.validate": [
+        "vue",
+        "html",
+        "vue-html",
+        "javascript",
+    ],
+    "[javascript]": {
+        "editor.formatOnSave": false,
+    },
+    "[vue]": {
+        "editor.formatOnSave": true,
+        "editor.tabSize": 2
+    },
+    "[vue-html]": {
+        "editor.formatOnSave": true,
+        "editor.tabSize": 2
+    },
+    "vetur.format.defaultFormatter.html": "prettier",
+    "vetur.completion.scaffoldSnippetSources": {
+        "workspace": "",
+        "user": "",
+        "vetur": ""
+    },
+    "editor.fontFamily": "'Fira Code', 'Droid Sans Mono', 'monospace', monospace, 'Droid Sans Fallback'",
+    "diffEditor.renderSideBySide": true,
+    "tailwindCSS.emmetCompletions": true,
+    "customizeUI.activityBar": "bottom",
+    "customizeUI.titleBar": "frameless",
+    "workbench.colorTheme": "Slime",
+    "workbench.activityBar.visible": true,
+    "workbench.editor.wrapTabs": true
+}

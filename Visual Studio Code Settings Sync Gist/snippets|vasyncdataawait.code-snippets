@@ -1,0 +1,53 @@
+{
+	"axios.get": {
+		"scope": "javascript,typescript,vue",
+		"prefix": "vasyncdataawait",
+		"body": [
+			"async asyncData({ \\$axios, error }) { // params, store",
+			"\ttry {",
+			"\t\tconst { data } = await \\$axios.get(`${1:url}`);",
+			"",
+			"\t\treturn {",
+			"\t\t\t${0:data}: data",
+			"\t\t};",
+			"\t catch(exception) {",
+			"\t\tconst result = {",
+			"\t\t\tstatusCode: 500,",
+			"\t\t\tmessage: (exception.request ? exception.message + \": \" : \"\") + \"Unexpected error occurred\"",
+			"\t\t};",
+			"",
+			"\t\tif (exception.response) {",
+			"\t\t\tresult.statusCode = exception.response.status;",
+			"\t\t\tresult.message = exception.message + \" (\" + exception.response.statusText + \")\";",
+			"\t\t}",
+			"",
+			"\t\terror(result);",
+			"\t}",
+			"}"
+		],
+		"description": "axios.get"
+	}
+}
+async asyncData({ $axios, error }) {
+    try {
+      const response = await $axios.get("events");
+      return {
+        events: response.data
+      };
+    } catch (exception) {
+      const result = {
+        statusCode: 500,
+        message:
+          (exception.request ? exception.message + ": " : "") +
+          "Unexpected error occurred"
+      };
+
+      if (exception.response) {
+        result.statusCode = exception.response.status;
+        result.message =
+          exception.message + " (" + exception.response.statusText + ")";
+      }
+
+      error(result);
+    }
+  }

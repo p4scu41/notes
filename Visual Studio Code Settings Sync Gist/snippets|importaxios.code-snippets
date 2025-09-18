@@ -1,0 +1,11 @@
+{
+	"axios.get": {
+		"scope": "javascript,typescript,vue",
+		"prefix": "importaxios",
+		"body": [
+			"import axios from \"axios\";",
+			"${0}"
+		],
+		"description": "axios.get"
+	}
+}

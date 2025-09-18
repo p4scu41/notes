@@ -1,0 +1,262 @@
+[
+  {
+    "metadata": {
+      "id": "d7fc53c7-9da8-42c1-8df6-25b0f80fe379",
+      "publisherId": "annsk.alignment",
+      "publisherDisplayName": "annsk"
+    },
+    "name": "alignment",
+    "publisher": "annsk",
+    "version": "0.3.0"
+  },
+  {
+    "metadata": {
+      "id": "d3836729-9cc1-42c1-b2af-d50071f57d29",
+      "publisherId": "formulahendry.auto-close-tag",
+      "publisherDisplayName": "formulahendry"
+    },
+    "name": "auto-close-tag",
+    "publisher": "formulahendry",
+    "version": "0.5.10"
+  },
+  {
+    "metadata": {
+      "id": "f583eafd-aa0d-4ccb-8f44-d1e610389660",
+      "publisherId": "CoenraadS.bracket-pair-colorizer",
+      "publisherDisplayName": "CoenraadS"
+    },
+    "name": "bracket-pair-colorizer",
+    "publisher": "CoenraadS",
+    "version": "1.0.61"
+  },
+  {
+    "metadata": {
+      "id": "e337c67b-55c2-4fef-8949-eb260e7fb7fd",
+      "publisherId": "Shan.code-settings-sync",
+      "publisherDisplayName": "Shan"
+    },
+    "name": "code-settings-sync",
+    "publisher": "Shan",
+    "version": "3.4.3"
+  },
+  {
+    "metadata": {
+      "id": "ac44dd75-bdb7-433b-9d86-23f9f070c07a",
+      "publisherId": "iocave.customize-ui",
+      "publisherDisplayName": "iocave"
+    },
+    "name": "customize-ui",
+    "publisher": "iocave",
+    "version": "0.1.51"
+  },
+  {
+    "metadata": {
+      "id": "f47eb891-234c-423d-a0c4-018fd6c9765a",
+      "publisherId": "flydreame.docblocker",
+      "publisherDisplayName": "flydreame"
+    },
+    "name": "docblocker",
+    "publisher": "flydreame",
+    "version": "0.5.0"
+  },
+  {
+    "metadata": {
+      "id": "532533c9-a894-4a58-9eee-bbfbe7c06f71",
+      "publisherId": "mikestead.dotenv",
+      "publisherDisplayName": "mikestead"
+    },
+    "name": "dotenv",
+    "publisher": "mikestead",
+    "version": "1.0.1"
+  },
+  {
+    "metadata": {
+      "id": "4de763bd-505d-4978-9575-2b7696ecf94e",
+      "publisherId": "eamodio.gitlens",
+      "publisherDisplayName": "eamodio"
+    },
+    "name": "gitlens",
+    "publisher": "eamodio",
+    "version": "11.3.0"
+  },
+  {
+    "metadata": {
+      "id": "eaa2127d-cb69-4ab9-8505-a60c9ee5f28b",
+      "publisherId": "oderwat.indent-rainbow",
+      "publisherDisplayName": "oderwat"
+    },
+    "name": "indent-rainbow",
+    "publisher": "oderwat",
+    "version": "7.5.0"
+  },
+  {
+    "metadata": {
+      "id": "32aada6b-3cbf-4590-ab56-f2c4423d028f",
+      "publisherId": "cjhowe7.laravel-blade",
+      "publisherDisplayName": "cjhowe7"
+    },
+    "name": "laravel-blade",
+    "publisher": "cjhowe7",
+    "version": "1.1.2"
+  },
+  {
+    "metadata": {
+      "id": "b52072d1-e507-4261-8935-f4d91a055d7d",
+      "publisherId": "amiralizadeh9480.laravel-extra-intellisense",
+      "publisherDisplayName": "amiralizadeh9480"
+    },
+    "name": "laravel-extra-intellisense",
+    "publisher": "amiralizadeh9480",
+    "version": "0.5.2"
+  },
+  {
+    "metadata": {
+      "id": "f1c1f5aa-1a7a-41ee-8710-3db3c3862f5e",
+      "publisherId": "mohamedbenhida.laravel-intellisense",
+      "publisherDisplayName": "mohamedbenhida"
+    },
+    "name": "laravel-intellisense",
+    "publisher": "mohamedbenhida",
+    "version": "0.2.0"
+  },
+  {
+    "metadata": {
+      "id": "9faed35e-46bf-4720-896f-8244928b6598",
+      "publisherId": "freshbitsweb.laravel-traveller",
+      "publisherDisplayName": "freshbitsweb"
+    },
+    "name": "laravel-traveller",
+    "publisher": "freshbitsweb",
+    "version": "1.11.0"
+  },
+  {
+    "metadata": {
+      "id": "736c2316-7f4f-4b6a-8e5c-70527d82cf51",
+      "publisherId": "iocave.monkey-patch",
+      "publisherDisplayName": "iocave"
+    },
+    "name": "monkey-patch",
+    "publisher": "iocave",
+    "version": "0.1.12"
+  },
+  {
+    "metadata": {
+      "id": "ca0094fa-0dc7-4847-ae5d-879442c099ca",
+      "publisherId": "neilbrayfield.php-docblocker",
+      "publisherDisplayName": "neilbrayfield"
+    },
+    "name": "php-docblocker",
+    "publisher": "neilbrayfield",
+    "version": "2.1.0"
+  },
+  {
+    "metadata": {
+      "id": "497cd23f-a7ab-47da-a705-92fb85aec6c5",
+      "publisherId": "TysonAndre.php-phan",
+      "publisherDisplayName": "TysonAndre"
+    },
+    "name": "php-phan",
+    "publisher": "TysonAndre",
+    "version": "3.0.0"
+  },
+  {
+    "metadata": {
+      "id": "b0a47156-9132-49a2-bebd-ed16d91b1fa6",
+      "publisherId": "ikappas.phpcs",
+      "publisherDisplayName": "ikappas"
+    },
+    "name": "phpcs",
+    "publisher": "ikappas",
+    "version": "1.0.5"
+  },
+  {
+    "metadata": {
+      "id": "67e66172-30c7-4478-8f5d-6eac4ae755dc",
+      "publisherId": "mohsen1.prettify-json",
+      "publisherDisplayName": "mohsen1"
+    },
+    "name": "prettify-json",
+    "publisher": "mohsen1",
+    "version": "0.0.3"
+  },
+  {
+    "metadata": {
+      "id": "ed3575fb-5812-4a43-9efb-c19649137420",
+      "publisherId": "liximomo.sftp",
+      "publisherDisplayName": "liximomo"
+    },
+    "name": "sftp",
+    "publisher": "liximomo",
+    "version": "1.12.9"
+  },
+  {
+    "metadata": {
+      "id": "735af542-944f-4b07-b336-9df27d7b8d84",
+      "publisherId": "smlombardi.slime",
+      "publisherDisplayName": "smlombardi"
+    },
+    "name": "slime",
+    "publisher": "smlombardi",
+    "version": "3.2.1"
+  },
+  {
+    "metadata": {
+      "id": "2f5dd8cb-d251-4d70-abfe-ddebcb077483",
+      "publisherId": "octref.vetur",
+      "publisherDisplayName": "octref"
+    },
+    "name": "vetur",
+    "publisher": "octref",
+    "version": "0.33.1"
+  },
+  {
+    "metadata": {
+      "id": "583b2b34-2c1e-4634-8c0b-0b82e283ea3a",
+      "publisherId": "dbaeumer.vscode-eslint",
+      "publisherDisplayName": "dbaeumer"
+    },
+    "name": "vscode-eslint",
+    "publisher": "dbaeumer",
+    "version": "2.1.16"
+  },
+  {
+    "metadata": {
+      "id": "ffda6552-0ad5-431b-a4fa-0905a7e4f3f0",
+      "publisherId": "bmewburn.vscode-intelephense-client",
+      "publisherDisplayName": "bmewburn"
+    },
+    "name": "vscode-intelephense-client",
+    "publisher": "bmewburn",
+    "version": "1.6.3"
+  },
+  {
+    "metadata": {
+      "id": "5d34182e-ae7d-47ab-b8f2-6138f9d3541f",
+      "publisherId": "ecodes.vscode-phpmd",
+      "publisherDisplayName": "ecodes"
+    },
+    "name": "vscode-phpmd",
+    "publisher": "ecodes",
+    "version": "1.2.0"
+  },
+  {
+    "metadata": {
+      "id": "4db62a7c-7d70-419c-96d2-6c3a4dc77ea5",
+      "publisherId": "bradlc.vscode-tailwindcss",
+      "publisherDisplayName": "bradlc"
+    },
+    "name": "vscode-tailwindcss",
+    "publisher": "bradlc",
+    "version": "0.5.9"
+  },
+  {
+    "metadata": {
+      "id": "c8d95916-cf54-455f-b324-cbd887b7d3a8",
+      "publisherId": "sdras.vue-vscode-snippets",
+      "publisherDisplayName": "sdras"
+    },
+    "name": "vue-vscode-snippets",
+    "publisher": "sdras",
+    "version": "2.2.0"
+  }
+]

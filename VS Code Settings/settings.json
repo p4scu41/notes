@@ -1,0 +1,87 @@
+{
+  "breadcrumbs.enabled": false,
+  "css.format.spaceAroundSelectorSeparator": true,
+  "diffEditor.renderSideBySide": false,
+  "editor.acceptSuggestionOnCommitCharacter": false,
+  "editor.accessibilitySupport": "off",
+  "editor.cursorStyle": "block",
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.fontLigatures": true,
+  "editor.fontSize": 13,
+  "editor.formatOnPaste": false,
+  "editor.formatOnSave": false,
+  "editor.formatOnSaveMode": "modificationsIfAvailable",
+  "editor.guides.bracketPairs": true,
+  "editor.lineHeight": 22,
+  "editor.minimap.enabled": false,
+  "editor.snippetSuggestions": "top",
+  "editor.suggest.localityBonus": true,
+  "editor.suggest.showKeywords": false,
+  "editor.tabSize": 2,
+  "editor.wordWrap": "on",
+  "editor.wordWrapColumn": 100,
+  "emmet.includeLanguages": {
+    "javascript": "javascriptreact"
+  },
+  "eslint.format.enable": true,
+  "eslint.validate": [
+    "html",
+    "javascript",
+    "javascriptreact",
+    "typescript",
+    "typescriptreact"
+  ],
+  "explorer.autoReveal": false,
+  "files.associations": {
+    "*.mdx": "markdown"
+  },
+  "files.insertFinalNewline": true,
+  "files.trimFinalNewlines": true,
+  "files.trimTrailingWhitespace": true,
+  "gitlens.hovers.autolinks.enabled": false,
+  "gitlens.hovers.autolinks.enhanced": false,
+  "gitlens.hovers.changesDiff": "hunk",
+  "javascript.format.semicolons": "insert",
+  "javascript.preferences.quoteStyle": "single",
+  "javascript.updateImportsOnFileMove.enabled": "always",
+  "jest.autoRun": "off",
+  "less.format.spaceAroundSelectorSeparator": true,
+  "playwright.reuseBrowser": true,
+  "prettier.singleQuote": true,
+  "ruby.intellisense": "rubyLocate",
+  "ruby.lint": {
+    "reek": {
+      "useBundler": true // enable reek via bundler
+    },
+    "rubocop": {
+      "lint": true, // enable lint cops
+      "rails": true, // requires rubocop-rails gem for RuboCop >= 0.72.0
+      "useBundler": true // enable rubocop via bundler
+    }
+  },
+  "ruby.useBundler": true, //run non-lint commands with bundle exec
+  "ruby.useLanguageServer": true, // use the internal language server (see below)
+  "scm.autoReveal": false,
+  "scss.format.spaceAroundSelectorSeparator": true,
+  "search.mode": "newEditor",
+  "search.showLineNumbers": true,
+  "security.workspace.trust.untrustedFiles": "open",
+  "telemetry.telemetryLevel": "error",
+  "typescript.format.semicolons": "insert",
+  "typescript.preferences.quoteStyle": "single",
+  "typescript.updateImportsOnFileMove.enabled": "always",
+  "window.title": "${dirty}${activeEditorMedium}${separator}${rootName}",
+  "workbench.activityBar.location": "top",
+  "workbench.colorCustomizations": {
+    "tab.activeBackground": "#475569",
+    "tab.activeBorder": "#99f6e3"
+  },
+  "workbench.editor.closeOnFileDelete": true,
+  "workbench.editor.highlightModifiedTabs": true,
+  "workbench.editor.wrapTabs": true,
+  "workbench.iconTheme": "material-icon-theme",
+  "workbench.list.horizontalScrolling": true,
+  "workbench.startupEditor": "none",
+  "workbench.tree.indent": 15,
+  "workbench.tree.renderIndentGuides": "always"
+}

@@ -1,0 +1,11 @@
+{
+
+	"$this->": {
+		"scope": "php",
+		"prefix": "th",
+		"body": [
+			"\\$this->$1"
+		],
+		"description": "$this->"
+	}
+}

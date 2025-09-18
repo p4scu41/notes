@@ -24,6 +24,8 @@
     - Release both keys. 
     - Press the "letter" you want to have the accent.
 
+  - Cmd + Delete => Move to Trash
+
 - VS Code keyword shortcuts
   - Cmd + Arrows | Fn + Arrows => Go to Start/End
   - Option + Arrows Up/Down => Move line Up/Down

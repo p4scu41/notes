@@ -1,0 +1,31 @@
+{
+	"axios.get": {
+		"scope": "javascript,typescript,vue",
+		"prefix": "vasyncdata",
+		"body": [
+			"asyncData({ \\$axios, error }) { // params, store",
+			"\treturn \\$axios",
+			"\t\t.get(`${1:url}`)",
+			"\t\t.then(response => {",
+			"\t\t\treturn {",
+			"\t\t\t\t${0:data}: response.data",
+			"\t\t\t};",
+			"\t\t})",
+			"\t\t.catch(exception => {",
+			"\t\t\tconst result = {",
+			"\t\t\t\tstatusCode: 500,",
+			"\t\t\t\tmessage: (exception.request ? exception.message + \": \" : \"\") + \"Unexpected error occurred\"",
+			"\t\t\t};",
+			"",
+			"\t\t\tif (exception.response) {",
+			"\t\t\t\tresult.statusCode = exception.response.status;",
+			"\t\t\t\tresult.message = exception.message + \" (\" + exception.response.statusText + \")\";",
+			"\t\t\t}",
+			"",
+			"\t\t\terror(result);",
+			"\t\t});",
+			"}"
+		],
+		"description": "axios.get"
+	}
+}

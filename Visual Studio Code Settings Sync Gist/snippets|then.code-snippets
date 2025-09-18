@@ -1,0 +1,12 @@
+{
+	"axios.get": {
+		"scope": "javascript,typescript,vue",
+		"prefix": "then",
+		"body": [
+			".then(response => {",
+			"\tthis.${1:data} = response.data;",
+			"})${0}"
+		],
+		"description": "axios.get"
+	}
+}
