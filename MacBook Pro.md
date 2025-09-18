@@ -1,0 +1,11 @@
+- Apps
+  - [Acrobat Reader](https://get.adobe.com/es/reader/)
+  - [Alfred](https://www.alfredapp.com/)
+  - [DBeaver](https://dbeaver.io/)
+  - [Laravel Herd](https://herd.laravel.com/)
+  - [Postman](https://www.postman.com/)
+  - [Rectangle](https://rectangleapp.com/)
+  - [Sourcetree](https://www.sourcetreeapp.com/)
+  - [Visual Studio Code](https://code.visualstudio.com/)
+  - [VLC](https://www.videolan.org/vlc/)
+  - [Warp](https://www.warp.dev/)
