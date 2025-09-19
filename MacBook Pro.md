@@ -19,12 +19,14 @@
     - Press Shift-n to type a capital Ñ.
 
   - How to get an accent over an a letter
-    - Press and hold the Option key. 
-    - While holding the Option key, press the "e" key. You'll see an apostrophe-like symbol appear temporarily. 
-    - Release both keys. 
+    - Press and hold the Option key.
+    - While holding the Option key, press the "e" key. You'll see an apostrophe-like symbol appear temporarily.
+    - Release both keys.
     - Press the "letter" you want to have the accent.
 
   - Cmd + Delete => Move to Trash
+
+  - Shit + Cmd + . (Period) => Toggle Hidden Files Visibility
 
 - VS Code keyword shortcuts
   - Cmd + Arrows | Fn + Arrows => Go to Start/End
@@ -37,4 +39,3 @@
   - Shift + Control + Arrow Right => Select next enclosed text
   - Option + Cmd + Arrows Up/Down = Duplicate cursor
   - Option + Cmd + Arrows Left/Right = Move Prev/Next Tab
-

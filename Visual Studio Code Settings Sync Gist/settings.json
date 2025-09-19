@@ -1,7 +1,44 @@
 {
-    "workbench.startupEditor": "newUntitledFile",
-    "editor.renderWhitespace": "all",
+    "[javascript]": {
+        "editor.formatOnSave": false
+    },
+    "[vue-html]": {
+        "editor.formatOnSave": true,
+        "editor.tabSize": 2
+    },
+    "[vue]": {
+        "editor.formatOnSave": true,
+        "editor.tabSize": 2
+    },
+    "customizeUI.activityBar": "bottom",
+    "customizeUI.titleBar": "frameless",
+    "debug.console.fontSize": 13.5,
+    "diffEditor.renderSideBySide": true,
+    "editor.fontFamily": "'Fira Code', 'Droid Sans Mono', 'monospace', monospace, 'Droid Sans Fallback'",
+    "editor.fontLigatures": true,
     "editor.fontSize": 13.5,
+    "editor.lineHeight": 23,
+    "editor.minimap.enabled": false,
+    "editor.renderWhitespace": "all",
+    "emmet.includeLanguages": {
+        "vue": "html",
+        "vue-html": "html"
+    },
+    "eslint.alwaysShowStatus": true,
+    "eslint.options": {
+        "extensions": [
+            ".js",
+            ".vue"
+        ]
+    },
+    "eslint.validate": [
+        "vue",
+        "html",
+        "vue-html",
+        "javascript"
+    ],
+    "explorer.autoReveal": false,
+    "explorer.openEditors.visible": 0,
     "files.exclude": {
         "**/.history": true,
         "**/.phan": true,
@@ -9,88 +46,53 @@
         "**/.vscode": true,
         "**/node_modules": true
     },
-    "editor.lineHeight": 23,
-    "editor.fontLigatures": true,
     "files.insertFinalNewline": true,
     "files.trimTrailingWhitespace": true,
     "files.watcherExclude": {
         "**/.history/**": true
     },
-    "workbench.editor.closeOnFileDelete": true,
-    "workbench.editor.highlightModifiedTabs": true,
-    "window.title": "${dirty}${activeEditorMedium}${separator}${rootName}${separator}",
-    "explorer.openEditors.visible": 0,
-    "search.exclude": {
-        "**/.history": true
-    },
-    "search.showLineNumbers": true,
-    "debug.console.fontSize": 13.5,
-    "terminal.integrated.fontWeightBold": "normal",
-    "gitlens.views.repositories.location": "gitlens",
+    "gitlens.views.compare.location": "gitlens",
     "gitlens.views.fileHistory.location": "gitlens",
     "gitlens.views.lineHistory.location": "gitlens",
-    "gitlens.views.compare.location": "gitlens",
+    "gitlens.views.repositories.location": "gitlens",
     "gitlens.views.search.location": "gitlens",
-    "phpcs.executablePath": "/home/usuario/.config/composer/vendor/bin/phpcs",
-    "phpcs.standard": "PSR2,Security,/home/usuario/.config/sublime-text-3/Packages/User/PHPCompatibilityCustom.xml,/home/usuario/.config/sublime-text-3/Packages/User/SlevomatCodingStandardCustom.xml",
-    "phpcs.showSources": true,
-    "phpcs.showWarnings": true,
-    "phpcs.ignorePatterns": [
-        "**/vendor"
-    ],
-    "phpmd.command": "/home/usuario/.config/composer/vendor/bin/phpmd",
-    "phpmd.rules": "/home/usuario/.config/sublime-text-3/Packages/User/PHPMDCustom.xml",
-    "sync.autoUpload": true,
-    "sync.gist": "e039d79258fe010c9fbdeb72cb3ee8d5",
-    "workbench.tree.indent": 15,
-    "workbench.list.horizontalScrolling": true,
-    "workbench.tree.renderIndentGuides": "always",
-    "editor.minimap.enabled": false,
-    "window.menuBarVisibility": "toggle",
-    "explorer.autoReveal": false,
+    "phan.analyzedProjectDirectory": [],
     "phan.enableCompletion": false,
     "phan.enableGoToDefinition": false,
     "phan.enableHover": false,
     "phan.phanScriptPath": "/home/usuario/.config/composer/vendor/bin/phan",
-    "phan.analyzedProjectDirectory": [
+    "phpcs.executablePath": "/home/usuario/.config/composer/vendor/bin/phpcs",
+    "phpcs.ignorePatterns": [
+        "**/vendor"
     ],
-    "emmet.includeLanguages": {
-        "vue": "html",
-        "vue-html": "html"
+    "phpcs.showSources": true,
+    "phpcs.showWarnings": true,
+    "phpcs.standard": "PSR2,Security,/home/usuario/.config/sublime-text-3/Packages/User/PHPCompatibilityCustom.xml,/home/usuario/.config/sublime-text-3/Packages/User/SlevomatCodingStandardCustom.xml",
+    "phpmd.command": "/home/usuario/.config/composer/vendor/bin/phpmd",
+    "phpmd.rules": "/home/usuario/.config/sublime-text-3/Packages/User/PHPMDCustom.xml",
+    "search.exclude": {
+        "**/.history": true
     },
-    "eslint.options": {
-        "extensions": [".js", ".vue"]
-    },
-    "eslint.alwaysShowStatus": true,
-    "eslint.validate": [
-        "vue",
-        "html",
-        "vue-html",
-        "javascript",
-    ],
-    "[javascript]": {
-        "editor.formatOnSave": false,
-    },
-    "[vue]": {
-        "editor.formatOnSave": true,
-        "editor.tabSize": 2
-    },
-    "[vue-html]": {
-        "editor.formatOnSave": true,
-        "editor.tabSize": 2
+    "search.showLineNumbers": true,
+    "sync.autoUpload": true,
+    "sync.gist": "e039d79258fe010c9fbdeb72cb3ee8d5",
+    "tailwindCSS.emmetCompletions": true,
+    "terminal.integrated.fontWeightBold": "normal",
+    "vetur.completion.scaffoldSnippetSources": {
+        "user": "",
+        "vetur": "",
+        "workspace": ""
     },
     "vetur.format.defaultFormatter.html": "prettier",
-    "vetur.completion.scaffoldSnippetSources": {
-        "workspace": "",
-        "user": "",
-        "vetur": ""
-    },
-    "editor.fontFamily": "'Fira Code', 'Droid Sans Mono', 'monospace', monospace, 'Droid Sans Fallback'",
-    "diffEditor.renderSideBySide": true,
-    "tailwindCSS.emmetCompletions": true,
-    "customizeUI.activityBar": "bottom",
-    "customizeUI.titleBar": "frameless",
-    "workbench.colorTheme": "Slime",
+    "window.menuBarVisibility": "toggle",
+    "window.title": "${dirty}${activeEditorMedium}${separator}${rootName}${separator}",
     "workbench.activityBar.visible": true,
-    "workbench.editor.wrapTabs": true
+    "workbench.colorTheme": "Slime",
+    "workbench.editor.closeOnFileDelete": true,
+    "workbench.editor.highlightModifiedTabs": true,
+    "workbench.editor.wrapTabs": true,
+    "workbench.list.horizontalScrolling": true,
+    "workbench.startupEditor": "newUntitledFile",
+    "workbench.tree.indent": 15,
+    "workbench.tree.renderIndentGuides": "always"
 }
