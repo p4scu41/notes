@@ -311,6 +311,63 @@
 
 - ## **Title & meta**
 
+  ```tsx
+  import { Head } from '@inertiajs/vue3'
+
+  <Head>
+    <title>Your page title</title>
+    <meta name="description" content="Your page description">
+  </Head>
+
+  // shorthand
+  <Head title="Your page title" />
+
+  createInertiaApp({
+    title: title => `${title} - My App`,
+    // ...
+  })
+
+  // Layout.vue
+
+  import { Head } from '@inertiajs/vue3'
+
+  <Head>
+    <title>My app</title>
+    <meta head-key="description" name="description" content="This is the default description" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  </Head>
+
+  // About.vue
+
+  import { Head } from '@inertiajs/vue3'
+
+  <Head>
+    <title>About - My app</title>
+    // head-key property will make sure the tag is only rendered once
+    <meta head-key="description" name="description" content="This is a page specific description" />
+  </Head>
+
+  // custom head component that extends Inertia's <Head> component
+  // AppHead.js
+
+  import { Head } from '@inertiajs/react'
+
+  const Site = ({ title, children }) => {
+    return (
+      <Head>
+        <title>{title ? `${title} - My App` : 'My App'}</title>
+        {children}
+      </Head>
+    )
+  }
+
+  export default Site
+
+  import AppHead from './AppHead'
+
+  <AppHead title="About">
+  ```
+
 - **Links**
 
   ```tsx
