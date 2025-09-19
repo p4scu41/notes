@@ -138,7 +138,7 @@
   }
   ```
 
-- **Pages**
+- ## **Pages**
 
   ```
   resolve: (name) => resolvePageComponent(`./pages/${name}.tsx`, import.meta.glob('./pages/**/*.tsx'))
@@ -149,10 +149,53 @@
 - **Persistent layouts**
 
   ```tsx
-  Component.layout = (page) => <Layout children={page} title='Welcome' />;
+  import Layout from './Layout'
+
+  const Home = ({ user }) => {
+    return (
+      <>
+        <H1>Welcome</H1>
+        <p>Hello {user.name}, welcome to your first Inertia app!</p>
+      </>
+    )
+  }
+
+  Home.layout = page => <Layout children={page} title="Welcome" />
+
+  export default Home
   ```
 
-- **Responses**
+- **Default layout**
+
+  ```ts
+  import Layout from './Layout'
+
+  createInertiaApp({
+    resolve: name => {
+      const pages = import.meta.glob('./Pages/**/*.jsx', { eager: true })
+      let page = pages[`./Pages/${name}.jsx`]
+
+      page.default.layout = page.default.layout || (page => <Layout children={page} />)
+
+      return page
+    },
+    // ...
+  })
+
+  createInertiaApp({
+    resolve: name => {
+      const pages = import.meta.glob('./Pages/**/*.jsx', { eager: true })
+      let page = pages[`./Pages/${name}.jsx`]
+
+      page.default.layout = name.startsWith('Public/') ? undefined : page => <Layout children={page} />
+
+      return page
+    },
+    // ...
+  })
+  ```
+
+- ## **Responses**
 
   ```php
   Inertia::render('Dashboard', [
@@ -287,7 +330,7 @@
   <meta name="description" content="{{ $meta }}">
   ```
 
-- **Redirects**
+- ## **Redirects**
 
   - When making a non-GET Inertia request manually or via a <Link> element, Inertia will automatically follow the redirect and update the page accordingly
     - return to_route('users.index');
@@ -297,7 +340,7 @@
     - window.location
     - return Inertia::location($url); // will generate a 409 Conflict response and include the destination URL in the X-Inertia-Location header
 
-- **Routing**
+- ## **Routing**
 
   - All of your application's routes are defined server-side, you don't need Vue Router or React Router
   - Route::inertia('/about', 'About');
@@ -368,7 +411,7 @@
   <AppHead title="About">
   ```
 
-- **Links**
+- ## **Links**
 
   ```tsx
   import { Link } from '@inertiajs/react'
@@ -411,6 +454,65 @@
 - ## **Data & Props**
 
 - ## **Shared data**
+  - Server-side
+  ```php
+  class HandleInertiaRequests extends Middleware
+  {
+      public function share(Request $request)
+      {
+          return array_merge(parent::share($request), [
+              // Synchronously...
+              'appName' => config('app.name'),
+
+              // Lazily...
+              'auth.user' => fn () => $request->user()
+                  ? $request->user()->only('id', 'name', 'email')
+                  : null,
+
+              'flash' => [
+                'message' => fn () => $request->session()->get('message')
+              ],
+          ]);
+      }
+  }
+
+  // Alternative
+
+  use Inertia\Inertia;
+
+  // Synchronously...
+  Inertia::share('appName', config('app.name'));
+
+  // Lazily...
+  Inertia::share('user', fn (Request $request) => $request->user()
+      ? $request->user()->only('id', 'name', 'email')
+      : null
+  );
+  ```
+
+  - Client-side
+  ```js
+  import { usePage } from '@inertiajs/react'
+
+  export default function Layout({ children }) {
+    const { auth } = usePage().props
+    const { flash } = usePage().props
+
+    return (
+      <main>
+        <header>
+          You are logged in as: {auth.user.name}
+        </header>
+        <article>
+          {flash.message && (
+            <div class="alert">{flash.message}</div>
+          )}
+          {children}
+        </article>
+      </main>
+    )
+  }
+  ```
 
 - ## **Partial reloads**
 
@@ -440,13 +542,45 @@
 
 - ## **Asset versioning**
 
-- ## **Code splitting**
+- ## **Code splitting (lazy-loading)**
+  - Vite: omit the { eager: true } option, or set it to false
+  ```tsx
+  createInertiaApp({
+    resolve: name => {
+      const pages = import.meta.glob('./Pages/**/*.jsx', { eager: false })
+      let page = pages[`./Pages/${name}.jsx`]
+
+      page.default.layout = page.default.layout || (page => <Layout children={page} />)
+
+      return page
+    },
+    // ...
+  })
+  ```
+  - Webpack
+    - enable dynamic imports via a Babel plugin
+    - npm install @babel/plugin-syntax-dynamic-import
+    - Next, create a .babelrc
+    ```json
+    {
+      "plugins": ["@babel/plugin-syntax-dynamic-import"]
+    }
+    ```
+    - resolve callback in your app's initialization code to use import instead of require
+    - resolve: name => import(`./Pages/${name}`),
+    - add the following configuration to your webpack configuration file
+    ```json
+    output: {
+      chunkFilename: 'js/[name].js?id=[chunkhash]',
+    }
+    ```
+
 
 - ## **Error handling**
 
 - ## **Events**
 
-- **Progress indicators**
+- ## **Progress indicators**
 
   - [NProgress](https://ricostacruz.com/nprogress/)
 

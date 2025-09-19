@@ -9,6 +9,8 @@
   - [Visual Studio Code](https://code.visualstudio.com/)
   - [VLC](https://www.videolan.org/vlc/)
   - [Warp](https://www.warp.dev/)
+  - [Zoom](https://zoom.us/download)
+  - [Microsoft Teams](https://www.microsoft.com/es-mx/microsoft-teams/log-in)
 
 - **Tips**
   - How to get ñ
