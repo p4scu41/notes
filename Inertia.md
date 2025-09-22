@@ -138,7 +138,7 @@
   }
   ```
 
-- ## **Pages**
+- ### **Pages**
 
   ```
   resolve: (name) => resolvePageComponent(`./pages/${name}.tsx`, import.meta.glob('./pages/**/*.tsx'))
@@ -195,7 +195,9 @@
   })
   ```
 
-- ## **Responses**
+- ### **Responses**
+
+  - To ensure that pages load quickly, only return the minimum data required for the page. Also, be aware that all data returned from the controllers will be visible client-side, so be sure to omit sensitive information.
 
   ```php
   Inertia::render('Dashboard', [
@@ -330,7 +332,7 @@
   <meta name="description" content="{{ $meta }}">
   ```
 
-- ## **Redirects**
+- ### **Redirects**
 
   - When making a non-GET Inertia request manually or via a <Link> element, Inertia will automatically follow the redirect and update the page accordingly
     - return to_route('users.index');
@@ -340,7 +342,7 @@
     - window.location
     - return Inertia::location($url); // will generate a 409 Conflict response and include the destination URL in the X-Inertia-Location header
 
-- ## **Routing**
+- ### **Routing**
 
   - All of your application's routes are defined server-side, you don't need Vue Router or React Router
   - Route::inertia('/about', 'About');
@@ -352,7 +354,7 @@
     <Link :href="route('users.create')">Create User</Link>
     ```
 
-- ## **Title & meta**
+- ### **Title & meta**
 
   ```tsx
   import { Head } from '@inertiajs/vue3'
@@ -411,7 +413,7 @@
   <AppHead title="About">
   ```
 
-- ## **Links**
+- ### **Links**
 
   ```tsx
   import { Link } from '@inertiajs/react'
@@ -443,17 +445,17 @@
 
   - While a link is making an active request, a _data-loading_ attribute is added
 
-- ## **Manual visits**
+- ### **Manual visits**
 
-- ## **Forms**
+- ### **Forms**
 
-- ## **File uploads**
+- ### **File uploads**
 
-- ## **Validation**
+- ### **Validation**
 
-- ## **Data & Props**
+- ### **Data & Props**
 
-- ## **Shared data**
+- ### **Shared data**
   - Server-side
   ```php
   class HandleInertiaRequests extends Middleware
@@ -514,35 +516,35 @@
   }
   ```
 
-- ## **Partial reloads**
+- ### **Partial reloads**
 
-- ## **Deferred props**
+- ### **Deferred props**
 
-- ## **Merging props**
+- ### **Merging props**
 
-- ## **Polling**
+- ### **Polling**
 
-- ## **Prefetching**
+- ### **Prefetching**
 
-- ## **Load when visible**
+- ### **Load when visible**
 
-- ## **Remembering state**
+- ### **Remembering state**
 
-- ## **Security**
+- ### **Security**
 
-- ## **Authentication**
+- ### **Authentication**
 
-- ## **Authorization**
+- ### **Authorization**
 
-- ## **CSRF protection**
+- ### **CSRF protection**
 
-- ## **History encryption**
+- ### **History encryption**
 
-- ## **Advanced**
+- ### **Advanced**
 
-- ## **Asset versioning**
+- ### **Asset versioning**
 
-- ## **Code splitting (lazy-loading)**
+- ### **Code splitting (lazy-loading)**
   - Vite: omit the { eager: true } option, or set it to false
   ```tsx
   createInertiaApp({
@@ -576,11 +578,11 @@
     ```
 
 
-- ## **Error handling**
+- ### **Error handling**
 
-- ## **Events**
+- ### **Events**
 
-- ## **Progress indicators**
+- ### **Progress indicators**
 
   - [NProgress](https://ricostacruz.com/nprogress/)
 
@@ -637,8 +639,8 @@
   });
   ```
 
-- ## **Scroll management**
+- ### **Scroll management**
 
-- ## **Server-side rendering**
+- ### **Server-side rendering**
 
-- ## **Testing**
+- ### **Testing**

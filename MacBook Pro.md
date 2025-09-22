@@ -30,6 +30,9 @@
 
   - Shit + Cmd + . (Period) => Toggle Hidden Files Visibility
 
+  - Shift + Cmd + 5 = Screenshot/Record Screen
+  - Control + Cmd + Escape = Stop Recording
+
 - VS Code keyword shortcuts
   - Cmd + Arrows | Fn + Arrows => Go to Start/End
   - Option + Arrows Up/Down => Move line Up/Down
