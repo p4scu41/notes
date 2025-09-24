@@ -742,3 +742,96 @@ const useDebounceState = (defaultValue, delay) => {
 
 const [value, setValue, debouncedValue] = useDebounceState("", 500);
 ```
+
+### Fetch chained information
+
+Database using json-server
+ > json-server companies_db.json
+```json
+{
+  "companies": [
+    {
+      "id": "1",
+      "name": "Google",
+      "locations": ["1", "2"]
+    },
+    {
+      "id": "2",
+      "name": "Amazon",
+      "locations": ["3", "4"]
+    }
+  ],
+  "locations": [
+    {
+      "id": "1",
+      "name": "California"
+    },
+    {
+      "id": "2",
+      "name": "New York"
+    },
+    {
+      "id": "3",
+      "name": "Washington"
+    }
+  ]
+}
+```
+
+```js
+// --- Services --- Return Promise
+
+function getCompanies() {
+  return fetch("http://localhost:3000/companies")
+    .then((response) => response.json());
+}
+
+function getLocation(locationId) {
+  return fetch(`http://localhost:3000/locations/${locationId}`)
+    .then((response) => response.json());
+}
+
+// --- Utils ---
+
+/*
+  { status: 'fulfilled', value: Response }
+  { status: 'rejected', reason: Error }
+*/
+const filterFulfilledPromises = (results) => {
+  return results
+    .filter((result) => result.status === "fulfilled")
+    .map((result) => result.value);
+};
+
+// --- Main logic ---
+
+// This returns a Promise because it is using async
+const fetchLocationsByCompany = async (company) => {
+  /*
+  Promise.allSettled()
+    - Takes an iterable of promises as input and returns a single Promise.
+    - This returned promise fulfills when all of the input's promises settle
+      with an array of objects that describe the outcome of each promise.
+  */
+  const locationsData = await Promise.allSettled(
+    company.locations.map(
+      (locationId) => getLocation(locationId)
+    )
+  );
+
+  return { ...company, locations: filterFulfilledPromises(locationsData) };
+};
+
+getCompanies()
+  .then((companies) => {
+    return companies.map(fetchLocationsByCompany);
+  }).then((allData) => {
+    // It requires to resolve "allData" because fetchLocationsByCompany return a Promise
+    Promise.allSettled(allData)
+      .then((results) => {
+        const companiesWithLocations = filterFulfilledPromises(results);
+
+        console.log("companiesWithLocations", companiesWithLocations);
+      });
+  });
+```
