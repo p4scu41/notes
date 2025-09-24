@@ -47,6 +47,53 @@ export default function Form() {
     </>
   );
 }
+
+// useFormStateData.js
+// The inputs should have the "name" attribute
+const useFormStateData = (defaultValue) => {
+  const [formData, setFormData] = useState(defaultValue);
+
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+
+    setFormData((data) => ({ ...data, [name]: value }));
+  };
+
+  return { formData, setFormData, handleChange };
+};
+
+export function Form() {
+  const { formData, handleChange } = useFormStateData({
+    firstName: "Mary",
+    lastName: "Poppins",
+  });
+
+  return (
+    <>
+      <label>
+        First name:
+        <input
+          name="firstName"
+          value={formData.firstName}
+          onChange={handleChange}
+        />
+      </label>
+      <label>
+        Last name:
+        <input
+          name="lastName"
+          value={formData.lastName}
+          onChange={handleChange}
+        />
+      </label>
+      <p>
+        <b>
+          Good morning, {formData.firstName} {formData.lastName}.
+        </b>
+      </p>
+    </>
+  );
+}
 ```
 
 ### Fetch information
@@ -331,7 +378,7 @@ function MyApp() {
     setCurrentUser(response.user);
   }, []);
 
-  const contextValue = useMemo(() => ({
+  const contextValue = useMemo(() => ({ // Ensure having the same object unless currentUser or login change
     currentUser,
     login
   }), [currentUser, login]);
@@ -598,4 +645,100 @@ function App() {
 	const { on, getTogglerProps } = useToggle()
 	return <button {...getTogglerProps()}>{on ? 'on' : 'off'}</button>
 }
+```
+
+### Passing Children as prop to improve re-renders
+```js
+const cache = {};
+
+const Child = () => {
+  console.log("  > Child");
+
+  return {
+    type: "Child",
+    props: "Child Props",
+    children: [],
+  };
+};
+
+const Parent = (childInstance = null) => {
+  console.log("* Parent");
+
+  const childObj = childInstance || Child();
+
+  if (cache[childObj.type] !== childObj) {
+    console.log("Render Child");
+  } else {
+    console.log("Same Child");
+  }
+
+  cache.Child = childObj;
+
+  return {
+    type: "Parent",
+    props: "Parent Props",
+    children: [childObj],
+  };
+};
+
+console.log(" --- Rendering Child inside Parent ---");
+console.log(Parent());
+console.log(Parent());
+console.log(Parent());
+
+console.log(" --- Passing Child as Parent prop ---");
+const childObj = Child();
+console.log(childObj);
+console.log(Parent(childObj));
+console.log(Parent(childObj));
+console.log(Parent(childObj));
+```
+
+
+### Debounce
+
+```jsx
+const Search = () => {
+  const [query, setQuery] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setSearchTerm(query);
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [query]);
+
+  return (
+    <div>
+      <input
+        type="text"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="Search..."
+      />
+      <p>Results for: {searchTerm}</p>
+    </div>
+  );
+};
+
+const useDebounceState = (defaultValue, delay) => {
+  const [value, setValue] = useState(defaultValue);
+  const [debouncedValue, setDebouncedValue] = useState(defaultValue);
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, [value, delay]);
+
+  return [value, setValue, debouncedValue];
+};
+
+const [value, setValue, debouncedValue] = useDebounceState("", 500);
 ```
