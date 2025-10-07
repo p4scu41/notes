@@ -745,6 +745,245 @@ const [value, setValue, debouncedValue] = useDebounceState("", 500);
 
 ### Fetch chained information
 
+All these methods take an iterable of promises and return a new promise. Note that JavaScript is single-threaded by nature, so at a given instant, only one task will be executing, although control can shift between different promises, making execution of the promises appear concurrent. Parallel execution in JavaScript can only be achieved through worker threads.
+
+- Promise.all(): Fulfills when all of the promises fulfill; rejects when any of the promises rejects.
+
+- Promise.allSettled(): Fulfills when all promises settle.
+
+- Promise.any(): Fulfills when any of the promises fulfills; rejects when all of the promises reject.
+
+- Promise.race(): Settles when any of the promises settles. In other words, fulfills when any of the promises fulfills; rejects when any of the promises rejects.
+
+```js
+// If one of the promises in the array rejects, Promise.all() immediately rejects the returned promise.
+// The other operations continue to run, but their outcomes are not available via the return value of Promise.all().
+// This may cause unexpected state or behavior.
+// Promise.allSettled() is another composition tool that ensures all operations are complete before resolving.
+// These methods all run promises concurrently — a sequence of promises are started simultaneously and do not wait for each other.
+
+Promise.all([func1(), func2(), func3()]).then(([result1, result2, result3]) => {
+  // use result1, result2 and result3
+});
+
+
+// Sequential composition is possible using some clever JavaScript:
+[func1, func2, func3]
+  .reduce((p, f) => p.then(f), Promise.resolve())
+  .then((result3) => {
+    /* use result3 */
+  });
+
+// In this example, we reduce an array of asynchronous functions down to a promise chain.
+// The code above is equivalent to:
+Promise.resolve()
+  .then(func1)
+  .then(func2)
+  .then(func3)
+  .then((result3) => {
+    /* use result3 */
+  });
+
+// This can be made into a reusable compose function, which is common in functional programming:
+const applyAsync = (acc, val) => acc.then(val);
+
+const composeAsync =
+  (...funcs) =>
+  (x) =>
+    funcs.reduce(applyAsync, Promise.resolve(x));
+
+// The composeAsync() function accepts any number of functions as arguments and
+// returns a new function that accepts an initial value to be passed through the composition pipeline:
+const transformData = composeAsync(func1, func2, func3);
+const result3 = transformData(data);
+
+// Sequential composition can also be done more succinctly with async/await:
+let result;
+for (const f of [func1, func2, func3]) {
+  result = await f(result);
+}
+/* use last result (i.e. result3) */
+// it's always better to run promises concurrently so that they don't unnecessarily block each other
+// unless one promise's execution depends on another's result.
+
+// Promise itself has no first-class protocol for cancellation,
+// but you may be able to directly cancel the underlying asynchronous operation,
+// typically using AbortController.
+
+// Functions passed to then() will never be called synchronously, even with an already-resolved promise:
+// Instead of running immediately, the passed-in function is put on a microtask queue, which means it runs later
+// (only after the function which created it exits, and when the JavaScript execution stack is empty),
+// just before control is returned to the event loop; i.e., pretty soon:
+
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+wait(0).then(() => console.log(4));
+Promise.resolve()
+  .then(() => console.log(2))
+  .then(() => console.log(3));
+console.log(1); // 1, 2, 3, 4
+
+// Promise callbacks are handled as a microtask
+// whereas setTimeout() callbacks are handled as task queues.
+
+const promise = new Promise((resolve, reject) => {
+  console.log("Promise callback");
+  resolve();
+}).then((result) => {
+  console.log("Promise callback (.then)");
+});
+
+setTimeout(() => {
+  console.log("event-loop cycle: Promise (fulfilled)", promise);
+}, 0);
+
+console.log("Promise (pending)", promise);
+
+// The code above will output:
+
+// Promise callback
+// Promise (pending) Promise {<pending>}
+// Promise callback (.then)
+// event-loop cycle: Promise (fulfilled) Promise {<fulfilled>}
+
+// When you return something from a then() callback, it's a bit magic.
+// If you return a value, the next then() is called with that value.
+// However, if you return something promise-like, the next then() waits on it,
+// and is only called when that promise settles (succeeds/fails)
+
+// The spec also uses the term thenable to describe an object that is promise-like, in that it has a then method.
+
+// https://web.dev/articles/promises
+
+var storyPromise;
+
+function getChapter(i) {
+  storyPromise = storyPromise || getJSON('story.json');
+
+  return storyPromise.then(function(story) {
+    return getJSON(story.chapterUrls[i]);
+  })
+}
+
+// and using it is simple:
+getChapter(0).then(function(chapter) {
+  console.log(chapter);
+  return getChapter(1);
+}).then(function(chapter) {
+  console.log(chapter);
+})
+// We don't download story.json until getChapter is called, but the next time(s) getChapter is called we reuse the story promise, so story.json is only fetched once. Yay Promises!
+
+// Start off with a promise that always resolves
+var sequence = Promise.resolve();
+
+// Loop through our chapter urls
+story.chapterUrls.forEach(function(chapterUrl) {
+  // Add these actions to the end of the sequence
+  sequence = sequence.then(function() {
+    return getJSON(chapterUrl);
+  }).then(function(chapter) {
+    addHtmlToPage(chapter.html);
+  });
+})
+
+// We can tidy up the above code using array.reduce:
+
+// Loop through our chapter urls
+story.chapterUrls.reduce(function(sequence, chapterUrl) {
+  // Add these actions to the end of the sequence
+  return sequence.then(function() {
+    return getJSON(chapterUrl);
+  }).then(function(chapter) {
+    addHtmlToPage(chapter.html);
+  });
+}, Promise.resolve())
+
+// Let's put it all together:
+
+getJSON('story.json').then(function(story) {
+  addHtmlToPage(story.heading);
+
+  return story.chapterUrls.reduce(function(sequence, chapterUrl) {
+    // Once the last chapter's promise is done…
+    return sequence.then(function() {
+      // …fetch the next chapter
+      return getJSON(chapterUrl);
+    }).then(function(chapter) {
+      // and add it to the page
+      addHtmlToPage(chapter.html);
+    });
+  }, Promise.resolve());
+}).then(function() {
+  // And we're all done!
+  addTextToPage("All done");
+}).catch(function(err) {
+  // Catch any error that happened along the way
+  addTextToPage("Argh, broken: " + err.message);
+}).then(function() {
+  // Always hide the spinner
+  document.querySelector('.spinner').style.display = 'none';
+})
+
+// Promise.all takes an array of promises and creates a promise that fulfills when all of them successfully complete.
+// You get an array of results (whatever the promises fulfilled to) in the same order as the promises you passed in.
+
+getJSON('story.json').then(function(story) {
+  addHtmlToPage(story.heading);
+
+  // Take an array of promises and wait on them all
+  return Promise.all(
+    // Map our array of chapter urls to
+    // an array of chapter json promises
+    story.chapterUrls.map(getJSON)
+  );
+}).then(function(chapters) {
+  // Now we have the chapters jsons in order! Loop through…
+  chapters.forEach(function(chapter) {
+    // …and add to the page
+    addHtmlToPage(chapter.html);
+  });
+  addTextToPage("All done");
+}).catch(function(err) {
+  // catch any error that happened so far
+  addTextToPage("Argh, broken: " + err.message);
+}).then(function() {
+  document.querySelector('.spinner').style.display = 'none';
+})
+
+// However, we can still improve perceived performance. When chapter one arrives we should add it to the page. This lets the user start reading before the rest of the chapters have arrived. When chapter three arrives, we wouldn't add it to the page because the user may not realize chapter two is missing.
+// To do this, we fetch JSON for all our chapters at the same time, then create a sequence to add them to the document:
+
+getJSON('story.json')
+.then(function(story) {
+  addHtmlToPage(story.heading);
+
+  // Map our array of chapter urls to
+  // an array of chapter json promises.
+  // This makes sure they all download in parallel.
+  return story.chapterUrls.map(getJSON)
+    .reduce(function(sequence, chapterPromise) {
+      // Use reduce to chain the promises together,
+      // adding content to the page for each chapter
+      return sequence
+      .then(function() {
+        // Wait for everything in the sequence so far,
+        // then wait for this chapter to arrive.
+        return chapterPromise;
+      }).then(function(chapter) {
+        addHtmlToPage(chapter.html);
+      });
+    }, Promise.resolve());
+}).then(function() {
+  addTextToPage("All done");
+}).catch(function(err) {
+  // catch any error that happened along the way
+  addTextToPage("Argh, broken: " + err.message);
+}).then(function() {
+  document.querySelector('.spinner').style.display = 'none';
+})
+```
+
 Database using json-server
  > json-server companies_db.json
 ```json
@@ -834,4 +1073,139 @@ getCompanies()
         console.log("companiesWithLocations", companiesWithLocations);
       });
   });
+```
+
+### Async/await functions
+
+```js
+async function myFirstAsyncFunction() {
+  try {
+    const fulfilledValue = await promise;
+  } catch (rejectedValue) {
+    // …
+  }
+}
+```
+
+If you use the async keyword before a function definition, you can then use await within the function. When you await a promise, the function is paused in a non-blocking way until the promise settles. If the promise fulfills, you get the value back. If the promise rejects, the rejected value is thrown.
+
+Say you want to fetch a URL and log the response as text. Here's how it looks using promises:
+
+```js
+function logFetch(url) {
+  return fetch(url)
+    .then((response) => response.text())
+    .then((text) => {
+      console.log(text);
+    })
+    .catch((err) => {
+      console.error('fetch failed', err);
+    });
+}
+```
+
+And here's the same thing using async functions:
+
+```js
+async function logFetch(url) {
+  try {
+    const response = await fetch(url);
+    console.log(await response.text());
+  } catch (err) {
+    console.log('fetch failed', err);
+  }
+}
+```
+
+Note: Anything you **await** is passed through Promise.resolve(), so you can safely await non-platform promises, such as those created by promise polyfills.
+
+Async functions **always return a promise**, whether you use await or not. That promise resolves with whatever the async function returns, or rejects with whatever the async function throws.
+
+```js
+// map some URLs to json-promises
+const jsonPromises = urls.map(async (url) => {
+  const response = await fetch(url);
+  return response.json();
+});
+```
+
+Note: The array.map(func) doesn't care that I gave it an async function. It just sees it as a function that returns a promise. It won't wait for the first function to complete before calling the second.
+
+Although you're writing code that looks synchronous, ensure you don't miss the opportunity to do things in parallel.
+
+```js
+async function series() {
+  await wait(500); // Wait 500ms…
+  await wait(500); // …then wait another 500ms.
+  return 'done!';
+}
+```
+
+The above takes 1000ms to complete, whereas:
+
+```js
+async function parallel() {
+  const wait1 = wait(500); // Start a 500ms timer asynchronously…
+  const wait2 = wait(500); // …meaning this timer happens in parallel.
+  await Promise.all([wait1, wait2]); // Wait for both timers in parallel.
+  return 'done!';
+}
+```
+
+The above takes 500ms to complete, because both waits happen at the same time. Let's look at a practical example.
+
+```js
+function markHandled(...promises) {
+  Promise.allSettled(promises);
+}
+
+async function logInOrder(urls) {
+  // fetch all the URLs in parallel
+  const textPromises = urls.map(async (url) => {
+    const response = await fetch(url);
+    return response.text();
+  });
+
+  markHandled(...textPromises);
+
+  // log them in sequence
+  for (const textPromise of textPromises) {
+    console.log(await textPromise);
+  }
+}
+```
+
+**Key point**: markHandled is used to avoid "unhandled promise rejections". If a promise rejects, and it was never given a rejection handler (for example, via .catch(handler)), it's known as an "unhandled rejection". These are logged to the console, and also trigger a global event. The gotcha when handling a bunch of promises in sequence, is if one of them rejects, the function ends and the remaining promises are never handled. markHandled is used to prevent this, by attaching rejection handlers to all of the promises.
+
+However, as soon as there's one await, the function becomes asynchronous, and execution of following statements is deferred to the next tick.
+
+```js
+async function foo(name) {
+  console.log(name, "start");
+  await console.log(name, "middle");
+  console.log(name, "end");
+}
+
+foo("First");
+foo("Second");
+
+// First start
+// First middle
+// Second start
+// Second middle
+// First end
+// Second end
+```
+
+This corresponds to:
+
+```js
+function foo(name) {
+  return new Promise((resolve) => {
+    console.log(name, "start");
+    resolve(console.log(name, "middle"));
+  }).then(() => {
+    console.log(name, "end");
+  });
+}
 ```
