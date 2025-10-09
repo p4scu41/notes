@@ -115,7 +115,7 @@ Evaluation:
 3. Server (Services Requests)
 4. Blob Storage (Media & Large blobs)
 5. Database (Primary Data Store)
-6. Case (Speed Layer)
+6. Cache (Speed Layer)
 7. Message Queue (Asynchronous comunication buffer)
 
 ![Components](Components.png)
