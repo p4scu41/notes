@@ -374,3 +374,206 @@ Service-level monitoring is the process of monitoring the health and performance
   - **Application-Level Monitoring**
 
 Application-level monitoring is the process of monitoring the health and performance of your application. This includes things like the **number of users**, the **number of active sessions**, and the **number of active connections**. This could also include key business metrics for the business. This is often done with a tool like **Google Analytics** or Mixpanel. This is often the most important level of monitoring for product design interviews.
+
+
+### E. Key Technologies
+
+- ### Core Database
+
+The most common are relational databases (e.g. Postgres) and NoSQL databases (e.g. DynamoDB) - we recommend you pick one of these for your interview. If you are taking predominantly **product** design interviews, we recommend you pick a **relational** database. If you are taking predominantly **infrastructure** design interviews, we recommend you pick a **NoSQL** database.
+
+Many candidates trip themselves up by trying to insert a comparison of relational and NoSQL databases into their answer. The reality is that these two technologies are highly overlapping and broad statements like "I need to use a relational database because I have relationships in my data" (NoSQL databases can work great for this) or "I've gotta use NoSQL because I need scale and performance" (relational databases, used correctly, perform and scale incredibly well) are often yellow flags that reveal inexperience.
+
+Here's the truth: most interviewers **don't need an explicit comparison** of SQL and NoSQL databases in your session and it's a pothole you should completely avoid. Instead, talk about what you know about the database you're using and **how it will help you solve the problem** at hand. If you're asked to compare, focus on the differences in the databases you're familiar with and how they would impact your design. So "I'm using Postgres here because its ACID properties will allow me to maintain data integrity" is a great opener.
+
+  - **Relational Databases**
+
+Sometimes called **RDBMS** or Relational Database Management Systems, are the most common type of database. They're often used for **transactional data** (e.g. user records, order records, etc) and are typically the default choice for a product design interview. Relational databases store your data in **tables**, which are composed of **rows** and **columns**. Each row represents a single record, and each column represents a single field on that record. Relational databases are often queried using **SQL**, a declarative language for querying data.
+
+The most important features are:
+  1. **SQL Joins**: Joins are a way of combining data from multiple tables. For example, if you have a users table and a posts table, you might want to query for all posts by a particular user. This is important for querying data and SQL databases can support arbitrary joins between tables. Note that joins can be also be a major performance bottleneck in your system so minimize them where possible.
+  2. **Indexes**: Indexes are a way of storing data in a way that makes it **faster to query**. For example, if you have a users table with a name column, you might create an index on the name column. This would allow you to query for users by name much faster than if you didn't have an index. Indexes are often implemented using a **B-Tree** or a **Hash Table**. The great thing about relational databases is (a) their support for arbitrarily **many indexes**, which allows you to optimize for different queries and (b) their support for **multi-column and specialized indexes** (e.g. geospatial indexes, full-text indexes).
+  3. **RDBMS Transactions**: Transactions are a way of grouping multiple operations together into a single **atomic operation**. For example, if you have a users table and a posts table, you might want to create a new user and a new post for that user at the same time. If you do this in a transaction, either both operations will succeed or both will fail. This ensures you don't have invalid data like a post from a user who doesn't exist!
+
+The most common relational databases are Postgres and MySQL. We recommend you pick **Postgres** and we have a great [deep-dive to help you with the details](https://www.hellointerview.com/learn/system-design/deep-dives/postgres), but either one is fine.
+
+The Four ACID Properties
+
+  1. **Atomicity**: This "all-or-nothing" property ensures that all operations within a transaction are completed fully or not at all. If any part of the transaction fails, the entire transaction is rolled back, and the database is returned to its previous state.
+  2. **Consistency**: This property ensures that a transaction brings the database from one valid state to another. It prevents transactions from leaving the database in an inconsistent or invalid state, even after an error.
+  3. **Isolation**: This property ensures that concurrent transactions do not interfere with each other. Each transaction executes as if it were the only one running, preventing issues like dirty reads or corrupted data from other incomplete transactions.
+  4. **Durability**: This property guarantees that once a transaction has been successfully committed, its changes are permanent and will persist even in the event of a system failure.
+
+Why ACID Transactions Are Important
+
+  a. **Data Integrity**: ACID properties are crucial for maintaining the integrity of data, especially in systems like banking, where accuracy is paramount.
+  b. **Reliability**: They provide a reliable framework for handling database operations, ensuring data correctness and consistency across the database.
+  c. **Error Recovery**: In the event of errors, power failures, or other issues, ACID properties allow the database to recover to a consistent state, preventing data loss.
+
+  - **NoSQL Databases**
+
+NoSQL databases are a broad category of databases designed to accommodate a wide range of data models, including key-value, document, column-family, and graph formats. Unlike relational databases, NoSQL databases **do not use a traditional table-based structure** and are often schema-less. This flexibility allows NoSQL databases to **handle large volumes of unstructured, semi-structured, or structured data**, and to **scale horizontally** with ease.
+
+![NoSQL Databases](8_no_sql_databases.png)
+
+NoSQL databases are strong candidates for situations where:
+
+  a. **Flexible Data Models**: Your data model is evolving or you need to store different types of data structures without a fixed schema.
+  b. **Scalability**: Your application needs to scale horizontally (across many servers) to accommodate large amounts of data or high user loads.
+  c. **Handling Big Data and Real-Time Web Apps**: You have applications dealing with large volumes of data, especially unstructured data, or applications requiring real-time data processing and analytics.
+
+The places where NoSQL databases excel are not necessarily places where relational databases fail (and vice-versa). For example, while NoSQL databases are great for handling unstructured data, relational databases can also have JSON columns with flexible schemas. While NoSQL databases are great for scaling horizontally, relational databases can also scale horizontally with the right architecture. When you're discussing NoSQL databases in your system design interview, make sure you're not making broad statements but instead discussing the specific features of the database you're using and how they will help you solve the problem at hand.
+
+Things you should know about NoSQL databases
+
+  1. **Data Models**: NoSQL databases come in many different flavors, each with its own data model. The most common types of NoSQL databases are key-value stores, document stores, column-family stores, and graph databases.
+  2. **Consistency Models**: NoSQL databases offer various consistency models ranging from strong to eventual consistency. Strong consistency ensures that all nodes in the system have the same data at the same time, while eventual consistency ensures that all nodes will eventually have the same data.
+  3. **Indexing**: NoSQL databases support indexing to make data faster to query. The most common types of indexes are B-Tree and Hash Table indexes.
+  4. **Scalability**: NoSQL databases scale horizontally by using consistent hashing and/or sharding to distribute data across many servers.
+    - [Consistent hashing](http://highscalability.com/blog/2023/2/22/consistent-hashing-algorithm.html) is a distributed systems technique that operates by assigning the data objects and nodes a position on a virtual ring structure (hash ring). Consistent hashing minimizes the number of keys to be remapped when the total number of nodes changes.
+    - [Sharding](https://www.mongodb.com/features/database-sharding-explained) is a method for distributing a single dataset across multiple databases, which can then be stored on multiple machines. This allows for larger datasets to be split into smaller chunks and stored in multiple data nodes, increasing the total storage capacity of the system. See more on the basics of sharding here.
+
+What are the most common NoSQL databases?
+
+The most common NoSQL databases are DynamoDB, Cassandra, and [MongoDB](https://www.mongodb.com/). [DynamoDB](https://www.hellointerview.com/learn/system-design/deep-dives/dynamodb) is one of our favorites due to the breadth of features and how widely accepted it is. [Cassandra](https://www.hellointerview.com/learn/system-design/deep-dives/cassandra) is a good choice for write-heavy workloads due to its append-only storage model, but comes with some tradeoffs in functionality.
+
+- ### Blob Storage
+
+Sometimes you'll need to store large, unstructured blobs of data. This could be **images, videos, or other files**. You should use a blob storage service like [Amazon S3](https://aws.amazon.com/pm/serv-s3/) or [Google Cloud Storage](https://cloud.google.com/storage).
+
+Blob storage services are simple. You can **upload a blob of data** and that **data is stored** and **get back a URL**. You can then **use this URL to download** the blob of data. Often times blob storage services **work in conjunction with CDNs**, so you can get fast downloads from anywhere in the world. Upload a file/blob to blob storage which will act as your origin, and then use a **CDN to cache** the file/blob in edge locations around the world.
+
+In a typical setup you will have a core database like Postgres or DynamoDB that has pointers (just a url) to the blobs stored in S3. This allows you to use the database to query and index the data with very low latency, while still getting the benefits of cheap blob storage.
+
+A very common setup when dealing with large binary artifacts looks like this:
+
+![Basic Blob Storage Example](9_basic_blob_storage_example.png)
+
+To upload:
+  - When clients want to upload a file, they request a presigned URL from the server.
+  - The server returns a presigned URL to the client, recording it in the database.
+  - The client uploads the file to the presigned URL.
+  - The blob storage triggers a notification to the server that the upload is complete and the status is updated.
+
+To download:
+  - The client requests a specific file from the server and are returned a presigned URL.
+  - The client uses the presigned URL to download the file via the CDN, which proxies the request to the underlying blob storage.
+
+  1. **Durability**: Blob storage services are designed to be incredibly durable. They use techniques like replication and erasure coding to ensure that your data is safe even if a disk or server fails.
+  2. **Scalability**: Hosted blob storage solutions like AWS S3 can be considered infinitely scalable. They can store an unlimited amount of data and can handle an unlimited number of requests (obviously within the limits of your account). You don't need to explicitly consider the scalability -- consider this as a given.
+  3. **Cost**: Blob storage services are designed to be cost effective. For example, AWS S3 charges $0.023 per GB per month for the first 50 TB of storage. This is much cheaper than storing the same data in a database like DynamoDB, which charges $1.25 per GB per month for the first 10 TB of storage.
+  4. **Security**: Blob storage services have built-in security features like encryption at rest and in transit. They also have access control features that allow you to control who can access your data.
+  5. **Upload and Download Directly from the Client**: Blob storage services allow you to upload and download blobs directly from the client. This is useful for applications that need to store and retrieve large blobs of data, like images or videos. Familiarize yourself with presigned URLs and how they can be used to grant temporary access to a blob -- either for upload or download.
+  6. **Chunking**: When uploading large files, it's common to use chunking to upload the file in smaller pieces. This allows you to resume an upload if it fails partway through, and it also allows you to upload the file in parallel. This is especially useful for large files, where uploading the entire file at once might take a long time. Modern blob storage services like S3 support chunking out of the box via the **multipart upload API**.
+
+The most popular blob storage services are **Amazon S3**, **Google Cloud Storage**, and [Azure Blob](https://azure.microsoft.com/en-us/products/storage/blobs). All of these services are designed to be fast, durable, and cost effective. They also have a range of features like versioning, lifecycle policies, and access control.
+
+- ### Search Optimized Database
+
+**Full-text search** is the ability to search through a large amount of text data and find relevant results. This is different from a traditional database query, which is usually based on exact matches or ranges. Without a search optimized database, you would need to run a query that looks something like this:
+
+```sql
+SELECT * FROM documents WHERE document_text LIKE '%search_term%'
+```
+
+This query is slow and inefficient, and it doesn't scale well because it requires a full table scan. That means the database has to grab each record and test it against your predicate rather than relying on an index or lookup. Slow!
+
+**Search optimized databases** are specifically designed to handle full-text search. They use techniques like **indexing**, **tokenization**, and **stemming** to make search queries fast and efficient. In short, they work by building what are called [inverted indexes](https://www.hellointerview.com/learn/system-design/deep-dives/elasticsearch#lucene-segment-features). **Inverted indexes** are a data structure that **maps from words to the documents that contain them**. This allows you to quickly find documents that contain a given word. A simple example of an inverted index might look like this:
+
+```json
+{
+  "word1": [doc1, doc2, doc3],
+  "word2": [doc2, doc3, doc4],
+  "word3": [doc1, doc3, doc4]
+}
+```
+
+Now, instead of scanning the entire table, the database can quickly look up the word in the query and find all the matching documents. Fast!
+
+  - **Inverted Indexes:** An inverted index is a data structure that maps from words to the documents that contain them. This allows you to quickly find documents that contain a given word.
+  - **Tokenization:** Tokenization is the process of breaking a piece of text into individual words. This allows you to map from words to documents in the inverted index.
+  - **Stemming:** Stemming is the process of reducing words to their **root form**. This allows you to match different forms of the same word. For example, "running" and "runs" would both be reduced to "run".
+  - **Fuzzy Search:** Fuzzy search is the ability to find results that are **similar** to a given search term. This works by using algorithms that can **tolerate** slight **misspellings** or **variations** in the search term. This is achieved through techniques like **edit distance calculation**, which measures how many letters need to be changed, added, or removed to transform one word into another.
+  - **Scaling:** Search optimized databases scale by **adding more nodes** to a **cluster** and **sharding data** across those nodes.
+
+The clear leader in this space is [Elasticsearch](https://www.elastic.co/elasticsearch/). You can learn more in our [Elasticsearch deep dive](https://www.hellointerview.com/learn/system-design/deep-dives/elasticsearch), but in short: **Elasticsearch** is a distributed, RESTful search and analytics engine that is built on top of **Apache Lucene**. It is designed to be fast, scalable, and easy to use, and is the most popular search optimized database and is used by companies like Netflix, Uber, and Yelp.
+
+- ### API Gateway
+
+An API gateway sits in front of your system and is responsible for **routing** incoming requests to the appropriate backend service. For example, if the system receives a request to *GET /users/123*, the API gateway would route that request to the users **service** and return the **response** to the client. The gateway is also typically responsible for handling cross-cutting concerns like **authentication**, **rate limiting**, and **logging**. it is a good idea to include an API gateway in your design as the **first point of contact for your clients**.
+
+![API Gateway](10_api_gateway.png)
+
+You're free to read more in our [API Gateway deep dive](https://www.hellointerview.com/learn/system-design/deep-dives/api-gateway), but note that interviewers rarely get into detail of the API gateway, they'll usually want to ask questions which are more specific to the problem at hand.
+
+- ### Load Balancer
+
+Most system design problems will require you to design a system that can **handle a large amount of traffic**. When you have a large amount of traffic, you will need to **distribute that traffic across multiple machines** (called **horizontal scaling**) to avoid overloading any single machine or creating a hotspot. For the purposes of an interview, you can assume that your load balancer is a black box that will distribute work across your system. The reality is that you need a load balancer wherever you have multiple machines capable of handling the same request.
+
+![A common setup for a horizontally scaled, authenticated service](11_a_common_setup_for_a_horizontally_scaled_authenticated_service.png)
+
+Note that sometimes you'll need to have specific features from your load balancer, like sticky sessions or persistent connections. The most common decision to make is whether to use an L4 (layer 4) or L7 (layer 7) load balancer.
+
+- Transport Layer (Layer 4) load balancers route traffic based on IP addresses and port numbers.
+- Application Layer (Layer 7) load balancers make more intelligent decisions based on the content of the application traffic, such as HTTP headers or URLs.
+
+You can somewhat shortcut this decision with a simple rule of thumb: if you have persistent connections like websockets, you'll likely want to use an L4 load balancer. Otherwise, an L7 load balancer offers great flexibility in routing traffic to different services while minimizing the connection load downstream. Read more about how to handle websocket connections in our [deep dive on problems that require real-time updates](https://www.hellointerview.com/learn/system-design/deep-dives/realtime-updates).
+
+The most common load balancers are [AWS Elastic Load Balancer](https://aws.amazon.com/elasticloadbalancing/) (a hosted offering from AWS), **NGINX** (an open-source webserver frequently used as a load balancer), and **HAProxy** (a popular open-source load balancer).
+
+- ### Queue
+
+Queues serve as buffers for bursty traffic or as a means of distributing work across a system. A compute resource **sends messages** to a **queue** and forgets about them. On the other end, a pool of **workers** (also compute resources) **processes the messages** at their own pace. Messages can be anything from a simple string to a complex object.
+
+The queue's function is to smooth out the load on the system. If I get a spike of 1,000 requests but can only handle 200 requests per second, 800 requests will wait in the queue before being processed — but they are not dropped! Queues also **decouple the producer and consumer** of a system, allowing you to scale them independently. I can bring down and up services behind a queue with negligible impact.
+
+Be careful of introducing queues into **synchronous workloads**. If you have strong latency requirements (e.g. < 500ms), by adding a queue you're nearly guaranteeing you'll break that latency constraint.
+
+Let's look at a couple common use cases for queues:
+  - **Buffer for Bursty Traffic:** In a ride-sharing application like Uber, queues can be used to manage sudden surges in ride requests. During peak hours or special events, ride requests can spike massively. A queue buffers these incoming requests, allowing the system to process them at a manageable rate without overloading the server or degrading the user experience.
+  - **Distribute Work Across a System:** In a cloud-based photo processing service, queues can be used to distribute expensive image processing tasks. When a user uploads photos for editing or filtering, these tasks are placed in a queue. Different worker nodes then pull tasks from the queue, ensuring even distribution of workload and efficient use of computing resources.
+
+![Queue Buffer](12_queue_buffer.png)
+
+  - **Message Ordering:** Most queues are **FIFO** (first in, first out), meaning that messages are processed in the order they were received. However, some queues (like [Kafka](https://www.hellointerview.com/learn/system-design/deep-dives/kafka)) allow for more complex ordering guarantees, such as ordering based on a specified **priority** or time.
+  - **Retry Mechanisms:** Many queues have built-in retry mechanisms that attempt to **redeliver** a message a certain number of times before considering it a **failure**. You can configure retries, including the delay between attempts, and the maximum number of attempts.
+  - **Dead Letter Queues:** Dead letter queues are used to **store messages that cannot be processed**. They're useful for **debugging and auditing**, as it allows you to inspect messages that failed to be processed and understand why they failed.
+  - **Scaling with Partitions:** Queues can be **partitioned across multiple servers** so that they can scale to handle more messages. Each partition can be processed by a different set of **workers**. Just like databases, you will need to specify a **partition key** to ensure that related messages are stored in the same partition.
+  - **Backpressure:** The biggest problem with queues is they make it easy to overwhelm your system. If my system supports 200 requests per second but I'm receiving 300 requests per second, I'll never finish them! A queue is just obscuring the problem that I don't have enough capacity. The answer is backpressure. Backpressure is a way of slowing down the production of messages when the queue is overwhelmed. This helps prevent the queue from becoming a bottleneck in your system. For example, if a queue is full, you might want to reject new messages or slow down the rate at which new messages are accepted, potentially returning an error to the user or producer.
+
+The most common queueing technologies are Kafka and SQS. **Kafka** is a distributed streaming platform that can be used as a queue (we have a[ deep-dive which goes into significant detail about how to use it](https://www.hellointerview.com/learn/system-design/deep-dives/kafka)), while [Amazon SQS](https://aws.amazon.com/sqs/) is a fully managed queue service provided by AWS.
+
+- ### Streams / Event Sourcing
+  - **When you need to process large amounts of data in real-time.**
+  - **When you need to support complex processing scenarios like event sourcing.**
+  - **When you need to support multiple consumers reading from the same stream.**
+
+  - **Scaling with Partitioning:**
+  - **Multiple Consumer Groups:**
+  - **Replication:**
+  - **Windowing:**
+
+- ### Distributed Lock
+  - **E-Commerce Checkout System:**
+  - **Ride-Sharing Matchmaking:**
+  - **Distributed Cron Jobs:**
+  - **Online Auction Bidding System:**
+
+  - **Locking Mechanisms:**
+  - **Lock Expiry:**
+  - **Locking Granularity:**
+  - **Deadlocks:**
+
+- ### Distributed Cache
+  - **Save Aggregated Metrics:**
+  - **Reduce Number of DB Queries:**
+  - **Speed Up Expensive Queries:**
+
+  - **Eviction Policy:**
+  - **Cache Invalidation Strategy:**
+  - **Cache Write Strategy:**
+
+- ### CDN
+  - **CDNs are not just for static assets.**
+  - **CDNs can be used to cache API responses.**
+  - **Eviction policies.**
