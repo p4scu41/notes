@@ -725,3 +725,244 @@ These patterns often work together to solve complex system design challenges. A 
 The key is recognizing which patterns apply to your specific problem and understanding their trade-offs. Start with simpler approaches (polling, single-server orchestration) and only add complexity when you have specific requirements that demand it.
 
 In system design interviews, proactively identifying and applying these patterns demonstrates architectural maturity and helps you focus on the most important aspects of your design rather than getting bogged down in implementation details.
+
+
+### G. Networking Essentials
+
+- ### Networking 101
+
+    - **Networking Layers**
+
+    ![OSI Layers](18_osi_layers.png)
+
+a. **Network Layer (Layer 3)**: At this layer is **IP**, the protocol that handles **routing** and **addressing**. It's responsible for breaking the data into **packets**, handling packet forwarding between networks, and providing best-effort delivery to any destination IP address on the network.
+
+b. **Transport Layer (Layer 4)**: At this layer, we have **TCP**, QUIC, and **UDP**, which provide **end-to-end communication** services. Think of them like a layer that provides features like reliability, ordering, and flow control on top of the network layer.
+
+c. **Application Layer (Layer 7)**: At the final layer are the application protocols like DNS, **HTTP**, **Websockets**, WebRTC. These are common protocols that build on top of TCP (or UDP, in the case of WebRTC) to provide a layer of abstraction for different types of data typically **associated with web applications**.
+
+    - **Example: A Simple Web Request**
+
+When you type a URL into your browser, we use **DNS** to convert a human-readable domain name like hellointerview.com into an IP address like 32.42.52.62. Then, We set up a TCP connection over IP, send our HTTP request, get a response, and tear down the connection.
+
+![Simple HTTP Request](19_simple_http_request.png)
+
+- ### Network Layer Protocols
+
+This layer is dominated by the **IP protocol**, which is responsible for **routing** and **addressing**. In a system, nodes are assigned IPs usually by a **DHCP server** when they boot up. These assigned IP addresses are called **public IPs** and are used to identify devices on the internet.
+
+- ### Transport Layer Protocols
+
+The transport layer is where we establish end-to-end communication between applications.
+
+  - **UDP: Fast but Unreliable**
+
+**User Datagram Protocol (UDP)** provides a simpler, connectionless service with no guarantees of delivery, ordering, or duplicate protection. Key characteristics of UDP include:
+- **Connectionless**: No handshake or connection setup
+- **No guarantee of delivery**: Packets may be lost without notification
+- **No ordering**: Packets may arrive in a different order than sent
+- **Lower latency**: Less overhead means faster transmission
+
+UDP is perfect for applications where **speed is more important than reliability**, such as live video streaming, online gaming, VoIP, and DNS lookups. **Browsers don't have widespread support for UDP** yet outside of WebRTC.
+
+  - **TCP: Reliable but with Overhead**
+
+**Transmission Control Protocol (TCP)** provides reliable, ordered, and error-checked delivery of data. It establishes a connection through a three-way handshake and maintains that connection throughout the communication session. This connection is called a "stream" and is a stateful connection between the client and server — it also gives us a basis to talk about ordering. Key Characteristics of TCP
+  a. **Connection-oriented**: Establishes a dedicated connection before data transfer
+  b. **Reliable delivery**: Guarantees that data arrives in order and without errors
+  c. **Flow control**: Prevents overwhelming receivers with too much data
+  d. **Congestion control**: Adapts to network congestion to prevent collapse
+
+TCP is ideal for applications where **data integrity is critical** — that is, basically everything where UDP is not a good fit.
+
+  - **When to Choose Each Protocol**
+
+Use TCP by default, You might choose UDP when:
+
+- Low latency is critical (real-time applications, gaming)
+- Some data loss is acceptable (media streaming)
+- You're handling high-volume telemetry or logs where occasional loss is acceptable
+- You don't need to support web browsers (or you have an alternative for that client)
+
+![TCP vs UDP Comparison](20_tcp_vs_udp_comparison.png)
+
+- ### Application Layer Protocols
+
+Typically the application layer is processed in **"User Space"** whereas layers beneath it are processed in the OS kernel in **"Kernel Space"**. This means that the application layer is more flexible and can be more easily modified than lower layers, whereas lower layers are difficult to change but can be very efficient.
+
+  - **HTTP/HTTPS: The Web's Foundation**
+
+**Hypertext Transfer Protocol (HTTP)** is the de-facto standard for data communication on the web. It's a **request-response protocol** where clients send requests to servers, and servers respond with the requested data.
+HTTP is a **stateless protocol**, meaning that each request is independent and the server doesn't need to maintain any information about previous requests. This is generally a good thing. In system design you'll want to minimize the surface area of your system that needs to be stateful where possible.
+
+![Simple HTTP Request/Response](21_simple_http_request_response.png)
+
+The headers are much more flexible (think of them like key/value pairs).
+
+HTTPS adds a security layer (TLS/SSL) to encrypt communications, protecting against eavesdropping and man-in-the-middle attacks. Generally speaking this means that the contents of your HTTP requests and responses are encrypted and safe in transit. While the contents of your HTTPS requests and responses are encrypted, they aren't guaranteed to be generated by your client! Your API should never trust the contents of the request body without validating it
+
+  - **REST: Simple and Flexible**
+
+REST is the most common API paradigm you'll use in system design interviews. It's a simple and flexible way to create APIs that are easy to understand and use. The core principle behind REST is that clients are often performing simple operations against **resources**.
+
+In RESTful API design, the primary challenge is to model your resources and the operations you can perform on them. RESTful API's take advantage of the **HTTP methods or verbs** together with some opinionated conventions about the **paths** and the body of the request. They often use **JSON** to **represent the resources** in both the request and response bodies.
+
+Many engineers often think in terms of methods like updateUser or startGame. These are **operations**, not resources, so they're not RESTful. In REST, we want to think in terms of resources and the operations you can perform on them. So our updateUser might be PUT /users/{id} and our startGame might be PATCH /games with { "status": "started" }.
+
+Overall REST is very flexible for a wide variety of use-cases and applications. REST is not going to be the most performant solution for very high throughput services, and generally speaking JSON is a pretty inefficient format for serializing and deserializing data. That said, most applications aren't going to be bottlenecked by request serialization. Like TCP, REST is where we'd suggest you default for your interviews. It's well-understood and a good baseline for building scalable systems. You should reach for GraphQL, gRPC, SSE, or WebSockets if you have specific needs that REST can't meet.
+
+  - **GraphQL: Flexible Data Fetching**
+
+GraphQL allows clients to request exactly the data they need. The problem with **under-fetching** is that you may need multiple requests and round trips. This adds overhead and latency to the page load. **Over-fetching** is the opposite: when we pack way more than we need in an API response to guard ourselves against future use-cases that we don't have today. It means that APIs take a long time to load and return too much data.
+
+GraphQL solves these problems by allowing the frontend team to flexibly query the backend for exactly the **data they need**. The backend can then respond with the data in the shape that the frontend needs it. This is a great fit for mobile apps and other use-cases where you want to reduce the amount of data transferred.
+
+GraphQL finds its sweet spot with complex clients and when multiple teams are making wide queries to overlapping data. We recommend bringing up GraphQL in cases where the problem is clearly focused on **flexibility** (e.g. the interviewer tells us we need to be able to adapt our apps quickly to changing requirements) or when the requirements in the interview are deliberately uncertain.
+
+  - **gRPC: Efficient Service Communication**
+
+gRPC is a **high-performance RPC (Remote Procedure Call) framework** from Google (the "g") that uses HTTP/2 and Protocol Buffers. Think of Protocol Buffers like JSON but with a more rigid schema that allows for better performance and more efficient serialization.
+
+gRPC shines in **microservices** architectures where services need to communicate efficiently. We recommend using REST for public-facing APIs and leaving gRPC for internal service-to-service communication.
+
+  - **Server-Sent Events (SSE): Real-Time Push Communication**
+
+Server-Sent Events (SSE) is a nice hack on top of HTTP that allows a server to **stream many messages**, over time, in a single response from the server. with SSE, the server can push many messages as **"chunks"** in a single response from the server.
+
+SSE comes with some acute limitations. We **can't keep an SSE connection open for too long** because the server (or the load balancer, or a middle box proxy) will close down the connection. So the SSE standard defines the behavior of an **EventSource** object that, once the connection is closed, will **automatically reconnect** with the ID of the last message received. Servers are expected to fill keep track of prior messages that may have been missed while the client was disconnected and resend them.
+In practice there are also some nasty, misbehaving networks that will batch up all SSE responses into a **single response** making it behave a lot like what we're trying to avoid.
+
+You'll find SSE useful in system design interviews in situations where you want clients to **get notifications or events as soon as they happen**. SSE is a great option for keeping bidders up-to-date on the current price of an auction, for example.
+
+  - **WebSockets: Real-Time Bidirectional Communication**
+
+WebSockets provide a **persistent**, **TCP-style connection** between **client and server**, allowing for **real-time**, **bidirectional communication** with broad support (including browsers). WebSockets enable **servers to push data to clients** without being prompted by a new request. Similarly **clients can push data back to the server** without the same wait. Here's how it works:
+1. Client initiates WebSocket handshake over HTTP (with a backing TCP connection)
+2. Connection upgrades to WebSocket protocol, WebSocket takes over the TCP connection
+3. Both client and server can send binary messages to each other over the connection
+4. The connection stays open until explicitly closed
+
+WebSockets come up in system design interviews when you need **high-frequency, persistent, bi-directional communication between client and server**. Think real-time applications, games, and other use-cases where you need to send and receive messages as soon as they happen.
+
+  - **WebRTC: Peer-to-Peer Communication**
+
+- ### Load Balancing
+
+We need to spread the incoming requests (load) by deciding which server should handle each request. There's two ways to handle load balancing:
+
+  - **Types of Load Balancing**
+
+  A. **Client-Side Load Balancing**
+
+The client itself decides which server to talk to. Usually this involves the client making a request to a service registry or directory which contains the list of available servers. Then the client makes a request to one of those servers directly. The client will need to periodically poll or be pushed updates when things change.
+
+A great example of this is **Redis Cluster** . Redis cluster nodes maintain a gossip protocol between each other to share information about the cluster: which nodes are present, their status, etc. Every node knows about every other node!
+
+  B. **Dedicated Load Balancers**
+
+A server or hardware device that sits between the client and the backend servers and makes decisions about which server to send the request to.
+
+**Layer 4 load balancers** operate at the transport layer (TCP/UDP). They make routing decisions based on network information like IP addresses and ports, without looking at the actual content of the packets. The effect of a L4 load balancer is as-if you randomly selected a backend server and assumed that TCP connections were established directly between the client and that server.
+- Maintain persistent TCP connections between client and server.
+- Are fast and efficient due to minimal packet inspection.
+- Cannot make routing decisions based on application data.
+- Are typically used when raw performance is the priority.
+
+![Simple HTTP Request with L4 Load Balancer](22_simple_http_request_with_l4_load_balancer.png)
+
+If a client establishes a TCP connection through an L4 load balancer, that same server will handle all subsequent requests within that TCP session. This makes L4 load balancers particularly well-suited for protocols that require **persistent connections**, like **WebSocket** connections.
+
+**Layer 7 load balancers** operate at the application layer, understanding protocols like **HTTP**. They can examine the actual content of each request and make **more intelligent routing decisions**.
+- Terminate incoming connections and create new ones to backend servers.
+- Can route based on request content (URL, headers, cookies, etc.).
+- More CPU-intensive due to packet inspection.
+- Provide more flexibility and features.
+- Better suited for HTTP-based traffic.
+
+![Simple HTTP Request with L7 Load Balancer](23_simple_http_request_with_l7_load_balancer.png)
+
+ L7 load balancer could route all **API requests** to one set of servers while sending **web page requests** to another, or it could ensure that all requests from a specific user go to the same server **based on a cookie**.
+
+**Health Checks and Fault Tolerance**
+
+Health checks are a way for the load balancer to determine if a server is healthy. They can be configured to check the server at different intervals and with different protocols. A common approach is to use a TCP health check, which is a simple and efficient way to check if a server is accepting new connections. A Layer 7 health check might make an HTTP request to the server and make sure the response is success (e.g. a 200 status code vs a 500 indicating internal failures or no response indicating a crash).
+
+**Load Balancing Algorithms**
+
+- **Round Robin**: Requests are distributed sequentially across servers
+- **Random**: Requests are distributed randomly across servers
+- **Least Connections**: Requests go to the server with the fewest active connections
+- **Least Response Time**: Requests go to the server with the fastest response time
+- **IP Hash**: Client IP determines which server receives the request (useful for session persistence)
+
+**Real-World Implementations**
+
+- **Hardware Load Balancers**: Physical devices like F5 Networks BIG-IP
+- **Software Load Balancers**: HAProxy, NGINX, Envoy
+- **Cloud Load Balancers**: AWS ELB/ALB/NLB, Google Cloud Load Balancing, Azure Load Balancer
+
+- ### Common Deep Dives and Challenges
+
+  - **Regionalization and Latency**
+
+A common pattern is to have **multiple data centers** in a single **region** (Amazon calls these "availability zones"). The **physical distance** between clients and servers significantly impacts network **latency**.
+
+For a regional application, we want to try to keep all of the data we need to satisfy a query
+  (a) as close together, and
+  (b) as close to the user as possible.
+
+  **Content Delivery Networks (CDNs)**
+
+CDNs are networks of servers that are strategically located around the world. These servers make up what is commonly referred to as an **"edge location"**. This is only possible because of **caching**. If our data doesn't change a lot, or doesn't need to be updated frequently, we can cache it at the edge server and return it from there. This is especially effective for static content like images, videos, and other assets.
+
+  **Regional Partitioning**
+
+Another strategy common when we need to deal with regionalization is regional partitioning. If we have a lot of users in a single region, we can partition our data by region so that each region only has data relevant to it.
+Let's take Uber as an example. With the Uber app we're ordering rides from drivers in a specific city. If we're in Miami, we'll never want to book a ride with a driver currently in New York.
+We can bundle together nearby cities into a single local region (e.g. "Northeast US", or "Southwest US"). Each region can have its own database hosted on distinct servers located in that geography (maybe we put our data centers in New York and Los Angeles). The servers handling requests can be co-located alongside the databases they need to query. Then when users want to book a ride, or look up their status, their queries can be answered by their regional services (fast), and those regional services can use a local database to process the query (very fast).
+
+  - **Handling Failures and Fault Modes**
+
+**Timeouts and Retries with Backoff**
+
+The most elementary hygiene for handling failures is to use **timeouts** and **retries**. If we expect a request to take a certain amount of time, we can set a **timeout** and if the request takes too long we can give up and t**ry again**. If a server is temporarily slow, we can retry the request and it will likely succeed. Having idempotent APIs is key here because we can retry the same request multiple times without causing issues.
+
+**Backoff**
+
+Retry strategies also include a backoff strategy. Instead of retrying immediately, we **wait a short amount of time before retrying**. If the request still fails, we wait a little longer. This gives the system time to recover and reduces the load on the system.
+
+It's important there is some randomness to the backoff strategy (often called **"jitter"**). It doesn't help us to have all of our clients retry at the same time! The worst case would be having all our failing requests synchronize and retry at the same time over and over again like a jackhammer. No good.
+
+In system design interviews, interviewers are often looking for the magic phrase **"retry with exponential backoff"**. In more senior interviews, you may be asked to elaborate about adding **jitter**.
+
+**Idempotency**
+
+Idempotent APIs are APIs that can be called multiple times and they produce the same result every time. HTTP GET requests are common examples of idempotent APIs. While the content returned by a GET request may change, the act of fetching the content does not change the state of the system.
+
+But reading data is easy, how about writing data? For these cases, it's common for us to introduce an idempotency key to our API. The **idempotency key** is a unique identifier for a request that we can use to make sure the same request is idempotent.
+
+**Circuit Breakers**
+
+The key for your preparation is to familiarize yourself with scenarios where one failure might create new failures: a **cascade of failure**s. Being able to identify these patterns and how to mitigate them is a great way to stand out in an interview.
+
+**Enter circuit breakers**: a crucial pattern for robust system design that directly impacts network communication. Circuit breakers protect your system when network calls to dependencies fail repeatedly. Here's how they work:
+- The circuit breaker monitors for failures when calling external services
+- When failures exceed a threshold, the circuit "trips" to an open state
+- While open, requests immediately fail without attempting the actual call
+- After a timeout period, the circuit transitions to a "half-open" state
+- A test request determines whether to close the circuit or keep it open
+
+This pattern prevents cascading failures across distributed systems and gives failing services time to recover.
+Circuit breakers provide numerous advantages:
+- Fail Fast: Quickly reject requests to failing services instead of waiting for timeouts
+- Reduce Load: Prevent overwhelming already struggling services with more requests
+- Self-Healing: Automatically test recovery without full traffic load
+- Improved User Experience: Provide fast fallbacks instead of hanging UI
+- System Stability: Prevent failures in one service from affecting the entire system
+
+Some example sites to apply circuit breakers:
+- External API calls to third-party services
+- Database connections and queries
+- Service-to-service communication in microservices
+- Resource-intensive operations that might time out
+- Any network call that could fail or become slow
