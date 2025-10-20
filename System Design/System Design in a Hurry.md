@@ -966,3 +966,90 @@ Some example sites to apply circuit breakers:
 - Service-to-service communication in microservices
 - Resource-intensive operations that might time out
 - Any network call that could fail or become slow
+
+
+### H. Numbers to Know
+
+[Amazon EC2 M6i Instances](https://aws.amazon.com/ec2/instance-types/m6i/)
+
+- ### Modern Hardware Limits
+
+AWS M6i.32xlarge comes with 512 GiB of memory and 128 vCPUs for general workloads
+X1e.32xlarge provides 4 TB of RAM
+U-24tb1.metal reaches 24 TB of RAM
+i3en.24xlarge provide 60 TB of local SSD storage
+D3en.12xlarge offers 336 TB of HDD storage
+Network capabilities: Datacenter, 10 Gbps is standard, with high-performance instances supporting up to 20 Gbps
+Cross-region bandwidth typically ranges from 100 Mbps to 1 Gbps
+Latency remains predictable: 1-2ms within a region, and 50-150ms cross-region
+
+- ### Caching
+
+  - Memory: Up to 1TB on memory-optimized instances
+  - Latency
+    - Reads: < 1ms within the same region
+    - Writes: 1-2ms average cross-region for optimized systems
+  - Throughput
+    - Reads: Over 100k requests/second per instance for in-memory caches
+    - Writes: Sustained throughput of hundreds of thousands of requests per second
+
+When to consider sharding:
+  - Dataset Size: Approaching 1TB in size
+  - Throughput: Sustained throughput of 100k+ ops/second
+  - Read Latency: Requirements below 0.5ms consistently (if being exceeded, consider sharding)
+
+- ### Databases
+
+  - Storage: Single instances handle up to 64 TiB for most database engines, with Aurora supporting up to 128 TiB in some configurations
+  - Latency
+    - Reads: 1-5ms for cached data, 5-30ms for disk
+    - Writes: 5-15ms for commit latency
+  - Throughput
+    - Reads: Up to 50k TPS in single-node configurations on Aurora and RDS
+    - Writes: 10-20k TPS in single-node configurations on Aurora and RDS
+    - Connections: 5-20k concurrent connections, depending on database and instance type
+
+When to consider sharding:
+  - Dataset Size: Approaching or exceeding 50 TiB may require sharding or distributed solutions
+  - Write Throughput: Consistently exceeding 10k TPS indicates scaling considerations
+  - Read Latency: Requirements below 5ms for uncached data may necessitate optimization
+  - Geographic Distribution: Cross-region replication or distribution needs
+  - Backup/Recovery: Backup windows that stretch into hours or become operationally impractical
+
+- ### Application Servers
+
+  - Connections: 100k+ concurrent connections per instance for optimized configurations
+  - CPU: 8-64 cores
+  - Memory: 64-512GB standard, up to 2TB available for high-memory instances
+  - Network: Up to 25 Gbps bandwidth in modern server configurations
+  - Startup Time: 30-60 seconds for containerized apps
+
+When to consider sharding:
+  - CPU Utilization: Consistently above 70-80%
+  - Response Latency: Exceeding SLA or critical thresholds
+  - Memory Usage: Trending above 70-80%
+  - Network Bandwidth: Approaching 20 Gbps
+
+- ### Message Queues
+
+  - Connections: 100k+ concurrent connections per instance for optimized configurations
+  - CPU: 8-64 cores
+  - Memory: 64-512GB standard, up to 2TB available for high-memory instances
+  - Network: Up to 25 Gbps bandwidth in modern server configurations
+  - Startup Time: 30-60 seconds for containerized apps
+
+When to consider sharding:
+  - CPU Utilization: Consistently above 70-80%
+  - Response Latency: Exceeding SLA or critical thresholds
+  - Memory Usage: Trending above 70-80%
+  - Network Bandwidth: Approaching 20 Gbps
+
+- ### Cheat Sheet
+
+![Numbers to Know Cheat Sheet](24_numbers_to_know_cheat_sheet.png)
+
+- ### Common Mistakes In Interviews
+
+  - **Premature sharding**
+  - **Overestimating latency**
+  - **Over-engineering given a high write throughput**
