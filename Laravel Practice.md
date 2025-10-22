@@ -54,7 +54,7 @@
   composer remove phpunit/phpunit
   composer require pestphp/pest --dev --with-all-dependencies
   ./vendor/bin/pest --init
-
+  tests/Pest.php => pest()->use(Illuminate\Foundation\Testing\RefreshDatabase::class)
   ```
 - Authentication
   ```
@@ -66,6 +66,7 @@
   Auth::user()->currentAccessToken()->delete()
   ```
 - Authorization
+  php artisan make:policy BookPolicy --model=Book
   ```php
   Gate::define('update-post', [PostPolicy::class, 'update']);
   App\Policies\BookPolicy
@@ -155,6 +156,12 @@
   - use Illuminate\Queue\InteractsWithQueue
   - implements Illuminate\Contracts\Queue\ShouldBeEncrypted
   - implements Illuminate\Contracts\Events\ShouldDispatchAfterCommit
+- Observer
+  ```
+  php artisan make:observer BookObserver --model=Book
+  ```
+  - app/Observers/BookObserver.php
+  - #[\Illuminate\Database\Eloquent\Attributes\ObservedBy([\App\Observers\BookObserver::class])] // Add in the Model Class
 - Broadcast
   - Laravel Echo => Echo.private('App.Models.User.' + userId)
   - import { useEchoNotification } from "@laravel/echo-react/vue";
