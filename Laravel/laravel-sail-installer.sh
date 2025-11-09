@@ -12,7 +12,9 @@ docker run --rm \
     -v "$(pwd)":/opt \
     -w /opt \
     laravelsail/php84-composer:latest \
-    bash -c "laravel new laravel-sail --database=pgsql --stack=react --dark --typescript --teams --verification --pest --no-interaction && cd laravel-sail && php ./artisan sail:install --with=pgsql,redis,mailpit "
+    bash -c "laravel new laravel-sail --database=pgsql --stack=react --dark --typescript --eslint --api --teams --verification --pest --no-interaction && cd laravel-sail && php ./artisan sail:install --with=pgsql,valkey,mailpit"
+
+# Available services (--with) include mysql, pgsql, mariadb, redis, valkey, memcached, meilisearch, typesense, minio, selenium, and mailpit:
 
 cd laravel-sail
 
