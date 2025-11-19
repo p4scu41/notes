@@ -548,7 +548,8 @@ In this example, we partition the data by month. For each row the window functio
 You can go further. Imagine if, instead of the total number of members who joined that month, you want to know what number joinee they were that month. You can do this by adding in an ORDER BY to the window function:
 
 ```sql
- count(*) over(partition by date_trunc('month',joindate) order by joindate),
+select
+  count(*) over(partition by date_trunc('month',joindate) order by joindate),
   firstname, surname
   from cd.members
 order by joindate
@@ -559,7 +560,8 @@ The ORDER BY changes the window again. Instead of the window for each row being 
 One final thing that's worth mentioning about window functions: you can have multiple unrelated ones in the same query. Try out the query below for an example - you'll see the numbers for the members going in opposite directions! This flexibility can lead to more concise, readable, and maintainable queries.
 
 ```sql
- count(*) over(partition by date_trunc('month',joindate) order by joindate asc),
+select
+  count(*) over(partition by date_trunc('month',joindate) order by joindate asc),
   count(*) over(partition by date_trunc('month',joindate) order by joindate desc),
   firstname, surname
   from cd.members
@@ -1119,7 +1121,7 @@ In this example, $1 and $2 are placeholders for parameters that will be provided
 The **EXECUTE** statement runs the previously prepared statement, providing the actual values for the parameters.
 
 ```sql
-    EXECUTE my_statement(123, 'John Doe');
+  EXECUTE my_statement(123, 'John Doe');
 ```
 
 During execution, PostgreSQL plans and executes the query using the pre-compiled form and the supplied parameter values.
@@ -1135,12 +1137,12 @@ Table partitioning allows you to divide a large table into smaller, more managea
 First, create the main table, specifying the partitioning method and the column(s) to partition by. PostgreSQL supports RANGE, LIST, and HASH partitioning.
 
 ```sql
-    CREATE TABLE sales (
-        id SERIAL,
-        sale_date DATE NOT NULL,
-        amount NUMERIC,
-        PRIMARY KEY (id, sale_date) -- Composite primary key required for partitioned tables
-    ) PARTITION BY RANGE (sale_date);
+CREATE TABLE sales (
+    id SERIAL,
+    sale_date DATE NOT NULL,
+    amount NUMERIC,
+    PRIMARY KEY (id, sale_date) -- Composite primary key required for partitioned tables
+) PARTITION BY RANGE (sale_date);
 ```
 
 In this example, sales is the parent table, and it is partitioned by sale_date using the RANGE method.
@@ -1148,11 +1150,11 @@ In this example, sales is the parent table, and it is partitioned by sale_date u
 Next, create the individual partitions (child tables) that belong to the parent table. Each partition must specify the values or ranges of the partition key it will hold.
 
 ```sql
-    CREATE TABLE sales_2023 PARTITION OF sales
-    FOR VALUES FROM ('2023-01-01') TO ('2024-01-01');
+CREATE TABLE sales_2023 PARTITION OF sales
+FOR VALUES FROM ('2023-01-01') TO ('2024-01-01');
 
-    CREATE TABLE sales_2024 PARTITION OF sales
-    FOR VALUES FROM ('2024-01-01') TO ('2025-01-01');
+CREATE TABLE sales_2024 PARTITION OF sales
+FOR VALUES FROM ('2024-01-01') TO ('2025-01-01');
 ```
 
 These statements create two partitions for the sales table, one for sales in 2023 and another for 2024. The FOR VALUES FROM ... TO ... clause defines the range for each partition. Note that the upper bound is exclusive.
@@ -1347,4 +1349,146 @@ TRANSLATE(string, from_set, to_set)
 select memid, translate(telephone, '-() ', '') as telephone
   from cd.members
   order by memid;
+```
+
+## jsonb_array_elements_text
+
+jsonb_array_elements_text() expands a top-level JSONB array into a set of text values. This function is particularly useful when you need to process each element of a JSONB array as a plain text string. The function takes a jsonb value representing an array as input and returns a set of text values, where each text value corresponds to an element from the input array.
+
+```sql
+SELECT jsonb_array_elements_text('["apple", "banana", "orange"]'::jsonb);
+
+--  jsonb_array_elements_text
+-- ---------------------------
+--  apple
+--  banana
+--  orange
+```
+
+- jsonb_array_elements_text() returns each element as a text data type.
+- jsonb_array_elements() returns each element as a jsonb data type.
+
+This distinction is important when you need to perform string-based operations or comparisons directly on the array elements without further JSON parsing. If an element in the JSONB array is not a simple string (e.g., a number, boolean, or nested object), jsonb_array_elements_text() will convert it to its text representation. For example, 42 becomes '42', true becomes 'true', and {"x": 17} becomes '{"x": 17}'. null values in the JSONB array become SQL NULL values when processed by jsonb_array_elements_text().
+
+## to_tsvector
+
+Function central to full-text search capabilities. It converts a textual document into a tsvector data type, which is a highly optimized representation for text searching. Here's how to_tsvector works and why it's used:
+  - **Tokenization**: It breaks down the input text into individual words or tokens.
+  - **Normalization (Stemming/Lemmatization)**: It reduces words to their base forms (lexemes), removing variations caused by suffixes. For example, "watches," "watched," and "watching" all become "watch." This ensures that searches for "watch" will match all these variations.
+  - **Stop Word Removal**: It can remove common, less meaningful words (stop words) like "the," "a," "is," etc., which typically don't contribute significantly to search relevance. The set of stop words is defined by the text search configuration.
+  - **Position Information**: It records the positions of the lexemes within the original document. This information is crucial for advanced search features like phrase searching (e.g., "quick brown fox") and for ranking search results based on word proximity.
+  - **Weighting**: While to_tsvector itself doesn't apply weights, the resulting tsvector can be combined with other tsvectors using the setweight function to assign different importance levels to different parts of a document (e.g., title vs. body).
+
+```
+to_tsvector([config regconfig,] document text)
+```
+
+- config: (Optional) Specifies the text search configuration to use (e.g., 'english', 'simple'). If omitted, the default_text_search_config setting is used.
+- document: The text to be converted to a tsvector.
+
+```sql
+SELECT to_tsvector('english', 'The quick brown fox jumps over the lazy dog.');
+
+--       to_tsvector
+-- -----------------------
+--  'brown':3 'dog':9 'fox':4 'jump':5 'lazy':8 'quick':2
+```
+
+This output shows the normalized lexemes along with their positions in the original string. Notice how "jumps" became "jump" and common words like "the" and "over" were removed.
+
+to_tsvector is typically used in conjunction with **to_tsquery** (which converts a search query into a **tsquery** data type) and the **@@** operator to perform **full-text searches**. It can also be used to create **tsvector** columns in tables, often with a **GIN** index, to optimize search performance.
+
+## GIN (Generalized Inverted Index)
+
+It is a powerful indexing technique particularly well-suited for indexing composite values and supporting search operations on their components.
+  - **Composite Values**: GIN indexes are designed for data types that contain multiple individual elements, such as arrays, **JSONB** documents, and **tsvector** data for full-text search.
+  - **Inverted Index Structure**: Unlike B-tree indexes that directly index an entire value, GIN indexes store each unique component value (or "key") only once. For each key, it maintains a "posting list" which is a set of row IDs where that key appears within the indexed column.
+  - **Efficient Component Search**: This inverted structure makes GIN indexes highly efficient for queries that need to search for specific elements within a composite item, such as finding documents containing certain words or checking for the presence of a value within an array.
+  - **Full-Text Search**: GIN indexes are commonly used with **tsvector** and **tsquery** for fast full-text search capabilities in PostgreSQL.
+  - **Syntax**: GIN indexes are created using the CREATE INDEX command with the USING GIN clause. For example:
+
+```sql
+CREATE INDEX my_gin_index ON my_table USING GIN (my_jsonb_column [operator_class]);
+```
+
+  - **Operator Classes**: GIN indexes rely on specific "operator classes" that define how keys are extracted from the data and how queries are processed. PostgreSQL provides built-in operator classes (array_ops, jsonb_ops, jsonb_path_ops, tsvector_ops, gin_trgm_ops, btree_gin) for common types like arrays and JSONB, and custom operator classes can be developed for other data types.
+  - **Performance Considerations**: While GIN indexes excel at search performance for composite values, they can be slower to build and update compared to B-tree indexes, especially without the fastupdate option. Updates can be optimized by proper autovacuum configuration or by disabling fastupdate if updates are infrequent.
+
+## JSONB Queries
+
+- **-> (Arrow Operator)**: Extracts a JSON object field by key or  array element by index, returning a jsonb value.
+```sql
+SELECT data->'key_name' FROM my_table;
+SELECT data->0 FROM my_table; -- For arrays
+SELECT '{"a": 1, "b": {"c": 2}}'::jsonb -> 'b'; -- Returns {"c": 2}
+SELECT '[1, 2, 3]'::jsonb -> 1; -- Returns 2
+```
+
+- **->> (Arrow-Text Operator)**: Extracts a JSON object field by key or  array element by index, returning the value as a plain text string.
+```sql
+SELECT data->>'key_name' FROM my_table;
+SELECT data->>0 FROM my_table; -- For arrays
+SELECT '{"a": 1, "b": {"c": 2}}'::jsonb ->> 'a'; -- Returns '1'
+SELECT '[1, 2, 3]'::jsonb ->> 1; -- Returns '2'
+```
+
+- **#> (Path Operator)**: Extracts a JSON sub-object at a specified path, returning a jsonb value. The path is an array of keys and/or array indices.
+```sql
+SELECT data#>'{"path", "to", "nested_key"}' FROM my_table;
+SELECT '{"a": {"b": 1}}'::jsonb #> '{a,b}'; -- Returns 1
+```
+
+- **#>> (Path-Text Operator)**: Extracts a JSON sub-object at a specified path, returning the value as a plain text string.
+```sql
+SELECT data#>>'{"path", "to", "nested_key"}' FROM my_table;
+SELECT '{"a": {"b": 1}}'::jsonb #>> '{a,b}'; -- Returns '1'
+```
+
+- **@> (Contains Operator)**: Checks if the left jsonb value contains the right jsonb value. Returns a boolean.
+  - @> : left contains the righ
+  - <@ : right contains the left (left is contained within the right)
+```sql
+SELECT '{"a":1, "b":2}'::jsonb @> '{"b":2}'::jsonb; -- Returns true
+SELECT '{"b": 2}'::jsonb <@ '{"a": 1, "b": 2}'::jsonb; -- Returns true
+```
+
+- **? (Exists Operator)**: Checks if a key (or element string for arrays) exists within the jsonb value. Returns a boolean.
+```sql
+SELECT '{"a":1, "b":2}'::jsonb ? 'b'; -- Returns true
+```
+
+- **?| (Any Key Exists Operator)**: Checks if any of the key/element strings from a text array exist within the jsonb value. Returns a boolean.
+```sql
+SELECT '{"a":1, "b":2, "c":3}'::jsonb ?| array['b', 'd']; -- Returns true
+```
+
+- **?& (All Keys Exists Operator)**: Checks if all of the key/element strings from a text array exist within the jsonb value. Returns a boolean.
+```sql
+SELECT '{"a":1, "b":2, "c":3}'::jsonb ?& array['a', 'c']; -- Returns true
+```
+
+- **|| (Concatenation Operator)**: Concatenates two jsonb values.
+```sql
+SELECT '{"a": 1}'::jsonb || '{"b": 2}'::jsonb; -- Returns {"a": 1, "b": 2}
+```
+
+- **- (Deletion Operator)**: Deletes a key from a JSON object or an element from a JSON array by index.
+```sql
+SELECT '{"a": 1, "b": 2}'::jsonb - 'b'; -- Returns {"a": 1}
+SELECT '[1, 2, 3]'::jsonb - 1; -- Returns [1, 3]
+```
+
+- **#- (Path Deletion Operator)**: Deletes a JSON object at a specified path.
+```sql
+SELECT '{"a": {"b": 1}}'::jsonb #- '{a,b}'; -- Returns {"a": {}}
+```
+
+- **jsonb_array_elements()**: Expands a jsonb array into a set of rows, each containing an element from the array.
+```sql
+SELECT jsonb_array_elements(data->'my_array') FROM my_table;
+```
+
+- **jsonb_each()**: Expands a jsonb object into a set of rows, each containing a key-value pair.
+```sql
+SELECT * FROM jsonb_each(data);
 ```
