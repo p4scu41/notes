@@ -258,7 +258,7 @@ select
 from mem
 where memid != 27;
 
--- Alternativa
+-- Alternative
 with recursive recommenders (recommender) as (
   select recommendedby
   from cd.members
@@ -506,6 +506,60 @@ where starttime between '2012-01-01' and '2013-01-01'
 group by rollup(facid, month)
 order by facid, month
 ```
+
+## GROUPING SETS
+
+GROUPING SETS is an advanced feature of the GROUP BY clause that allows the generation of multiple groupings within a single query. This is particularly useful for creating complex reports that require aggregation at various levels without resorting to multiple GROUP BY queries combined with UNION ALL.
+
+Instead of a single set of grouping columns, GROUPING SETS accepts a list of grouping sets. Each grouping set within the list defines a distinct aggregation level. The query then computes the aggregate functions for each specified grouping set and returns the results as a single, combined output.
+
+```sql
+SELECT column1, column2, aggregate_function(column3)
+FROM table_name
+GROUP BY GROUPING SETS (
+    (column1, column2),
+    (column1),
+    (column2),
+    () -- Represents a grand total (no grouping columns)
+);
+```
+
+Example: Consider a sales table with region, category, and amount columns. To get totals by region and category, by region only, and a grand total, you could use GROUPING SETS:
+
+```sql
+SELECT region, category, SUM(amount) AS total_amount
+FROM sales
+GROUP BY GROUPING SETS (
+    (region, category),
+    (region),
+    ()
+);
+```
+
+This query would return rows showing the sum of amount for each unique combination of region and category, for each region (with category being NULL), and a single row representing the grand total of all sales (with both region and category being NULL).
+
+## STRING_AGG
+
+It is an aggregate function that concatenates a list of strings and places a separator between them. It does not add the separator at the end of the string.
+
+```sql
+STRING_AGG ( expression, separator [order_by_clause] )
+```
+
+The STRING_AGG() function accepts two arguments and an optional ORDER BY clause.
+
+- expression is any valid expression that can resolve to a character string. If you use other types than character string type, you need to explicitly cast these values of that type to the character string type.
+- separator is the separator for concatenated strings.
+
+The order_by_clause is an optional clause that specifies the order of concatenated results. It has the following form:
+
+```sql
+ORDER BY expression1 {ASC | DESC}, [...]
+```
+
+The STRING_AGG() is similar to the ARRAY_AGG() function except for the return type. The return value of the STRING_AGG() function is a string whereas the return value of the ARRAY_AGG() function is an array.
+
+Like other aggregate functions such as AVG(), COUNT(), MAX(), MIN(), and SUM(), the STRING_AGG() function is often used with the GROUP BY clause.
 
 ## TO_CHAR
 
@@ -833,6 +887,46 @@ SELECT
 FROM
     sales;
 ```
+
+## FILTER
+
+FILTER is a clause primarily used with aggregate functions and window functions to selectively include rows in the aggregation or window calculation based on a specified condition. It provides a more concise and often more efficient way to achieve conditional aggregation compared to using CASE WHEN expressions within aggregate functions.
+
+**Usage with Aggregate Functions:**
+
+The FILTER clause is placed after an aggregate function within a SELECT statement. It takes a WHERE clause-like condition in parentheses. Only rows that satisfy this condition are considered for the aggregation.
+
+```sql
+SELECT
+    SUM(quantity) FILTER (WHERE sales_month = 1) AS jan_quantity,
+    SUM(quantity) FILTER (WHERE sales_month = 2) AS feb_quantity
+FROM
+    car_sales;
+```
+
+In this example, SUM(quantity) FILTER (WHERE sales_month = 1) calculates the sum of quantity only for rows where sales_month is 1, effectively creating a "January quantity" column.
+
+**Usage with Window Functions:**
+
+Similarly, the FILTER clause can be used with window functions to apply a condition to the rows within a specific window.
+
+```sql
+SELECT
+    day,
+    city,
+    temperature,
+    AVG(temperature) OVER (PARTITION BY city ORDER BY day) FILTER (WHERE temperature > 70) AS avg_temp_above_70
+FROM
+    weather_data;
+```
+
+Here, AVG(temperature) OVER (...) FILTER (WHERE temperature > 70) calculates the average temperature within each city's window, but only considering days where the temperature was above 70.
+
+**Distinction from WHERE and HAVING:**
+
+- **WHERE clause:** Filters rows before any aggregation or grouping takes place.
+- **HAVING clause:** Filters groups of rows after aggregation and GROUP BY operations.
+- **FILTER clause:** Filters rows within an aggregate or window function's scope, before the specific aggregation or window calculation is performed for that function.
 
 ## Complex JOINs
 
@@ -1564,3 +1658,324 @@ WHERE to_tsvector('english', your_text_column) @@ to_tsquery('english', 'search 
 
 CREATE INDEX IF NOT EXISTS idx_name ON my_table USING GIN(to_tsvector('english', COALESCE(text_column,'')));
 ```
+
+## CROSS JOIN
+
+a CROSS JOIN produces the Cartesian product of two or more tables. This means that every row from the first table is combined with every row from the second table, and so on for any additional tables included in the CROSS JOIN.
+
+- **Cartesian Product**: If TableA has n rows and TableB has m rows, the result of a CROSS JOIN between them will have n * m rows.
+- **No Join Condition**: Unlike other join types (e.g., INNER JOIN, LEFT JOIN), a CROSS JOIN does not require an ON clause to specify a join condition. It inherently joins all possible combinations.
+- **Implicit Syntax**: A CROSS JOIN can also be achieved by listing multiple tables in the FROM clause separated by commas, without any WHERE clause to restrict the join.
+
+```sql
+SELECT column_name(s)
+FROM table1
+CROSS JOIN table2;
+
+-- Example
+CREATE TABLE products (
+    product_id SERIAL PRIMARY KEY,
+    product_name VARCHAR(50)
+);
+
+CREATE TABLE colors (
+    color_id SERIAL PRIMARY KEY,
+    color_name VARCHAR(50)
+);
+
+INSERT INTO products (product_name) VALUES ('Shirt'), ('Pants');
+INSERT INTO colors (color_name) VALUES ('Red'), ('Blue'), ('Green');
+
+SELECT p.product_name, c.color_name
+FROM products p
+CROSS JOIN colors c;
+```
+
+| product_name | color_name |
+| -------------| ---------- |
+| Shirt        | Red        |
+| Shirt        | Blue       |
+| Shirt        | Green      |
+| Pants        | Red        |
+| Pants        | Blue       |
+| Pants        | Green      |
+
+## LATERAL
+
+the LATERAL keyword allows a subquery in the FROM clause to reference columns from tables that appear before it in the same FROM clause. This enables you to perform per-row computations or fetch related data based on the values of the preceding tables.
+
+- **Correlated Subqueries in FROM**: Unlike standard subqueries in the FROM clause, which are evaluated independently, a LATERAL subquery can "see" and utilize columns from the tables to its left. This effectively turns the subquery into a correlated subquery that runs for each row of the preceding table(s).
+- **Per-Row Computation**: LATERAL is particularly useful when you need to perform a calculation or retrieve a specific set of rows for each row of another table. For example, finding the latest order for each customer, or the top N products within each category.
+- **Flexibility with Table Functions**: LATERAL often pairs well with table functions (functions that return a set of rows), allowing you to pass values from the main query to the function and join its results back.
+
+Example Use Case: Consider a scenario where you want to retrieve each user along with their most recent order.
+
+```sql
+SELECT
+    u.id AS user_id,
+    u.name AS user_name,
+    o.id AS latest_order_id,
+    o.order_date AS latest_order_date
+FROM
+    users u
+JOIN LATERAL (
+    SELECT
+        id,
+        order_date
+    FROM
+        orders
+    WHERE
+        orders.user_id = u.id
+    ORDER BY
+        order_date DESC
+    LIMIT 1
+) o ON TRUE;
+```
+
+1. The users u table is processed first.
+2. For each row in users, the LATERAL subquery is executed.
+3. The LATERAL subquery can reference u.id from the users table to filter orders specifically for that user.
+4. It then selects the latest order for that user using ORDER BY order_date DESC LIMIT 1.
+5. Finally, the results of the LATERAL subquery (aliased as o) are joined back to the users table.
+
+## CROSS JOIN LATERAL
+
+When you use CROSS JOIN LATERAL, the LATERAL subquery (or set-returning function) is executed for each row of the table on the left side of the CROSS JOIN. The results of this subquery are then "crossed" with the corresponding row from the left table.
+
+Example: Consider a table mytab with a jsonb column containing arrays. You want to unpack these arrays into individual rows, associating each unpacked element with its original id.
+
+```sql
+CREATE TABLE mytab (
+    id bigint PRIMARY KEY,
+    data jsonb
+);
+
+INSERT INTO mytab VALUES
+(1, '{ "key": ["five", "six"] }'),
+(2, '{ "key": ["pick", "up", "sticks"] }');
+
+SELECT mytab.id, j.elem
+FROM mytab
+CROSS JOIN LATERAL jsonb_array_elements_text( mytab.data -> 'key' ) AS j(elem);
+```
+
+| id | elem   |
+| ---|------- |
+|  1 | five    |
+|  1 | six    |
+|  2 | pick   |
+|  2 | up     |
+|  2 | sticks |
+
+1. mytab is the left-side table.
+2. jsonb_array_elements_text( mytab.data -> 'key' ) is the set-returning function within the LATERAL subquery. This function takes the jsonb array from the data column of each row in mytab and expands it into a set of individual text elements.
+3. The CROSS JOIN LATERAL then combines each row from mytab with the set of elements generated by jsonb_array_elements_text for that specific row.
+
+## CREATE TYPE
+
+the CREATE TYPE statement is used to define new data types.
+
+### 1. Composite Types
+
+Composite types are essentially structures that group together multiple attributes, each with its own data type. They are often used as the return type of functions or for defining complex table structures.
+
+```sql
+CREATE TYPE type_name AS (
+    attribute_name1 data_type1,
+    attribute_name2 data_type2,
+    -- ... more attributes
+);
+
+-- Example
+CREATE TYPE address AS (
+    street VARCHAR,
+    city VARCHAR,
+    state CHAR(2),
+    zip_code CHAR(5)
+);
+```
+
+### 2. Enum Types
+
+Enum types define a static, ordered list of possible values. This is useful for columns where the values are restricted to a predefined set of options.
+
+```sql
+CREATE TYPE enum_name AS ENUM (
+    'value1',
+    'value2',
+    'value3'
+    -- ... more values
+);
+
+-- Example
+CREATE TYPE mpaa_rating AS ENUM (
+    'G',
+    'PG',
+    'PG-13',
+    'R',
+    'NC-17'
+);
+```
+
+### 3. Range Types
+
+Range types represent a range of values of a specific data type, such as a range of integers or timestamps.
+
+```sql
+CREATE TYPE name AS RANGE (
+    SUBTYPE = subtype,
+    -- ... other options like SUBTYPE_OPCLASS, COLLATION, CANONICAL, SUBTYPE_DIFF
+);
+
+CREATE TYPE int4range AS RANGE (
+    SUBTYPE = integer
+);
+```
+
+## INTERSECT
+
+The INTERSECT operator combines the result sets of two or more SELECT statements and returns only the rows that are common to all of them. It identifies the overlapping data between the queried tables or result sets.
+
+```sql
+SELECT expression1, expression2, ...
+FROM table1
+WHERE conditions1
+INTERSECT
+SELECT expression1, expression2, ...
+FROM table2
+WHERE conditions2;
+```
+
+**Key rules for using INTERSECT:**
+
+- **Same number of columns**: Each SELECT statement involved in the INTERSECT operation must project the same number of columns or expressions.
+- **Compatible data types**: The corresponding columns in each SELECT statement must have compatible data types. While they don't have to be identical, they must be implicitly or explicitly convertible to a common type.
+- **Duplicate elimination**: By default, INTERSECT eliminates duplicate rows from its final result set, similar to the behavior of DISTINCT. To retain duplicates, INTERSECT ALL can be used.
+
+Example: To find category_id values that exist in both the products table and the inventory table:
+
+```sql
+SELECT category_id FROM products
+INTERSECT
+SELECT category_id FROM inventory;
+```
+
+## Partial Indexes
+
+PostgreSQL allows for indexing on a subset of a table using the WHERE clause.
+
+```sql
+CREATE INDEX <index_name>
+ON <table_name> (<column>)
+WHERE <condition>;
+```
+
+## Ordered Indexes
+
+PostgreSQL can use indexes to return results in order without a separate step to sort. This is done by specifying the order (ASC or DESC) you want the index to be in when you create the index.
+
+```sql
+CREATE INDEX <index_name> ON <table_name> (<column_name> ASC)
+```
+
+## Indexes With Functions
+
+A column Index is not limited to just a column reference, it can also be a function or scalar expression computed from one or more columns.
+
+```sql
+-- This uses the LOWER function to ensure only one value of a string can be added to a table, regardless of capitalization. i.e 'name@test.com' and 'NAME@test.com' will be considered the same email address.
+CREATE UNIQUE INDEX customers_email_address_lower_unique_idx
+ON customers(LOWER(email_address));
+```
+
+## Database Size
+
+To see the size of the database, you can use pg_size_pretty and pg_total_relation_size. This is a useful command to use before and after creating an index to see how much space the index is using.
+
+```sql
+SELECT pg_size_pretty (pg_total_relation_size('<table_name>'));
+```
+
+## [EXPLAIN](https://gist.github.com/SamsadSajid/40e14bbb9157f53f44cca08d1e9eba39)
+
+- **EXPLAIN query;**: Shows the estimated query plan **without executing the query**. This includes estimated costs, rows, and width for each node. This is useful for analyzing expensive queries in production without incurring the actual load.
+- **EXPLAIN ANALYZE query;**: **Executes the query** and shows the actual run time and row counts alongside the estimated values. This helps in validating the planner's estimates. Use this for precise performance analysis, but be aware it runs the query and may impact performance on production systems. If you want to analyze any statement such as INSERT, UPDATE, or DELETE without affecting the data, you should wrap the EXPLAIN ANALYZE in a transaction and ROLLBACK at the end.
+
+EXPLAIN Options
+  - **EXPLAIN (FORMAT TEXT|XML|JSON|YAML) ...**: Formats the output, TEXT is the default.
+  - **EXPLAIN (ANALYZE, BUFFERS) ...**: Includes information about buffer usage (shared hits, reads, dirtied, written) which helps identify I/O-intensive parts of the query.
+  - **EXPLAIN (ANALYZE, TIMING) ...**: Shows timing information for each node. Disabling this (TIMING FALSE) can reduce overhead for micro-benchmarking.
+  - **EXPLAIN (ANALYZE, VERBOSE) ...**: Provides more detailed information, such as output columns and full index names.
+  - **EXPLAIN (ANALYZE, COSTS OFF) ...**: Omits the estimated costs for a cleaner output when focusing on other metrics.
+  - **EXPLAIN (ANALYZE, WAL) ...**: Shows WAL (Write-Ahead Log) usage information.
+
+Scan nodes
+  - **Seq Scan**: Full table scan, reading every row sequentially. Often indicates missing or unused indexes.
+  - **Index Scan**: Uses an index to retrieve specific rows. Efficient for selective queries.
+  - **Index Only Scan**: Retrieves data directly from the index without visiting the table, if all required columns are in the index.
+  - **Bitmap Scans**: Used to avoid random I/O caused by fetching rows from an index. Table rows are fetched in physical order. Is always structured as a Bitmap Heap Scan with one or more nested Bitmap Index Scans. Multiple Bitmap Index Scans will be combined using BitmapOr or BitmapAnd.
+    - **Bitmap Index Scan**: (inner) using an index, produces a truth table of disk pages that might contain the rows we need.
+    - **Bitmap Heap Scan**: (outer) sorts the row locations into physical order before reading the pages indicated by the truth table into memory. The "bitmap" is what does the sorting.
+
+Join types
+  - **Hash Join / Hash**: A join implemented using a Hash table.
+    - Hash first calls a sub-operation to create a hash table keyed by the join condition
+    - Hash Join then runs a second sub-operation and filters its results through the hash table
+    - Memory Usage is peak used
+    - Batches will be 1 if all in memory, > 1 means disk usage was required.
+  - **Merge Join**: Used if joined datasets can be or are already sorted using the join key. Always has two sub-operations Sort and Materialize.
+  - **Nested Loop Join**: A join. Always has two sub-operations: first node produces a list of rows; then for every row that returns, it runs the second operation. Iterates through one relation and for each row, searches the other relation. Efficient for small inner relations or when an index can be used.
+  - **Nested Loop Semi Join**: Where inner result set data is not returned, only used to filter. Most often seen when using EXISTS.
+
+Aggregate types
+  - **HashAggregate**: Aggregate rows by a grouping key then digest them into one row per group by performing AVG, SUM, COUNT etc. Uses work_mem to allocate a Hash table.
+  - **Unique**: Uses a HashAggregate if the data is unsorted. If the data is sorted can be perform a memory-cheap if last rows was the same check.
+  - **GroupAggregate**: If the data is sorted skips using a hash map and uses the same check-last-row algorithm Unique uses.
+
+Other types
+  - **Sort**: sorting, either in-memory if work_mem is big enough or on disk. Explicit sorting operation, often triggered by ORDER BY or GROUP BY clauses without suitable indexes.
+  - **Limit**: return just the first N rows. Usually stopping sub-operations asap.
+  - **Materialize**: essentially runs an operation (subquery or CTE) then stores its rows in memory for repeat processing.
+  - **CTE**: execution of a CTE
+  - **CTE Scan**: like Materialize, but this time with results returned by a CTE.
+  - **Append**: will be seen with queries that do something like UNION ALL where no duplicate elimation is happening, and we are simply aggregating the results of several sub-operations.
+  - **Gather**: gathers results from a parallel query execution. Will have exactly one child node which is the node that will be executed in parallel. Reads tuples from workers in whatever order they appear, destroying sort order.
+  - **Gather Merge**: same as Gather but used when the child node will return tuples in sorted order, so the leader will perform an order preserving merge.
+  - Workers Planned and Parallel shows that PostgreSQL has decided to run operations in parallel to speed up our query.
+  - JIT:
+
+Interpreting Costs and Rows
+  - **->**: Marks the start of info on a "plan node"
+  - **cost**: Represents the estimated cost of the operation in arbitrary units (conventionally disk page fetches). Lower cost is generally better. This includes ESTIMATED_STARTUP_TIME..ESTIMATED_TOTAL_TIME. ESTIMATED_STARTUP_TIME cost before output can begin, E.g. the sorting in a Sort node. The ESTIMATED_TOTAL_TIME cost assuming the node runs to completion, Includes the start-up cost.
+  - **rows**: Estimated number of rows produced by the node. Discrepancies between estimated and actual rows in EXPLAIN ANALYZE can indicate stale statistics.
+  - **width**: Average size (in bytes) of the rows produced by the node.
+  - **actual**
+    - **time=STARTUP_TIME..TOTAL_TIME**: STARTUP_TIME: Time until the first row is returned. TOTAL_TIME: Total time for the node to complete. It is an average of all the loops, multiply by loops to find the total time spent.
+    - **rows**: Number of rows processed or returned by the node. It is an average per-execution if there are loops.
+    - **loops**: Number of times the node was executed (relevant for nested operations).
+  - **Filter**: This means a plan node checks a condition for each row it scans. Will cause a reduction in estimated rows returned, but will increase the cost because it will add (rows * cpu_operator_cost).
+  - **Join Filter**: If we're using some kind of OUTER JOIN.
+
+Tips for Analysis
+- Start from the innermost nodes and work outwards.
+- Look for high actual time values, especially compared to estimated costs.
+- Compare rows values between nodes to identify where filtering is effective or inefficient.
+- Investigate Sequential Scan nodes on large tables to see if an index could improve performance.
+- Consider EXPLAIN ANALYZE for detailed timings, but use EXPLAIN for quick estimations on production.
+
+## GIN index on a JSONB column may not be used, resulting in a sequential scan
+
+Reasons:
+  - **High Selectivity**: If a query is expected to return a large percentage of the rows in a table (e.g., more than 5-10%), PostgreSQL's query planner may determine that a sequential scan is more efficient than an index scan. This is because the overhead of traversing the index and then fetching individual rows from the heap can outweigh the cost of simply scanning the entire table.
+  - **Inefficient Query Operators**: The GIN index on a JSONB column is optimized for specific operators like @> (contains), <@ (is contained by), && (overlaps), and full-text search operators. If the query uses operators that are not efficiently supported by the GIN index (e.g., specific path-based comparisons without using jsonb_path_ops), the planner might opt for a sequential scan.
+  - **Outdated Statistics**: If table statistics are not up-to-date, the query planner may have an inaccurate estimate of the data distribution and selectivity of the query. This can lead to suboptimal plan choices, including choosing a sequential scan when an index scan would be more efficient. Running ANALYZE table_name; can refresh these statistics.
+  - **Index Definition and Operator Class:**
+    - The default GIN index on a JSONB column uses the jsonb_ops operator class, which indexes all keys and values.
+    - For queries primarily involving path-based lookups, using the jsonb_path_ops operator class (e.g., CREATE INDEX idx_name ON table_name USING GIN (jsonb_column jsonb_path_ops);) can be more efficient as it indexes path-value pairs using a hash, potentially leading to better index utilization.
+  - **Small Table Size**: For very small tables, the cost of setting up and using an index might be higher than simply performing a sequential scan, regardless of the query's selectivity.
+
+To investigate and resolve this:
+  - **Use EXPLAIN (ANALYZE, BUFFERS)**: This command provides detailed information about the query execution plan, including whether an index is being used, the cost estimates, and the actual execution times and buffer usage. This helps in understanding why a sequential scan is chosen.
+  - **Analyze Table Statistics**: Ensure that ANALYZE has been run recently on the table to provide the query planner with accurate statistics.
+  - **Review Query Operators**: Verify that the query is using operators that are well-supported by the GIN index.
+  - **Consider jsonb_path_ops**: If your queries are heavily reliant on specific paths within the JSONB data, consider creating a GIN index with the jsonb_path_ops operator class.
