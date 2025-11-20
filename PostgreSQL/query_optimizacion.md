@@ -1370,34 +1370,6 @@ SELECT jsonb_array_elements_text('["apple", "banana", "orange"]'::jsonb);
 
 This distinction is important when you need to perform string-based operations or comparisons directly on the array elements without further JSON parsing. If an element in the JSONB array is not a simple string (e.g., a number, boolean, or nested object), jsonb_array_elements_text() will convert it to its text representation. For example, 42 becomes '42', true becomes 'true', and {"x": 17} becomes '{"x": 17}'. null values in the JSONB array become SQL NULL values when processed by jsonb_array_elements_text().
 
-## to_tsvector
-
-Function central to full-text search capabilities. It converts a textual document into a tsvector data type, which is a highly optimized representation for text searching. Here's how to_tsvector works and why it's used:
-  - **Tokenization**: It breaks down the input text into individual words or tokens.
-  - **Normalization (Stemming/Lemmatization)**: It reduces words to their base forms (lexemes), removing variations caused by suffixes. For example, "watches," "watched," and "watching" all become "watch." This ensures that searches for "watch" will match all these variations.
-  - **Stop Word Removal**: It can remove common, less meaningful words (stop words) like "the," "a," "is," etc., which typically don't contribute significantly to search relevance. The set of stop words is defined by the text search configuration.
-  - **Position Information**: It records the positions of the lexemes within the original document. This information is crucial for advanced search features like phrase searching (e.g., "quick brown fox") and for ranking search results based on word proximity.
-  - **Weighting**: While to_tsvector itself doesn't apply weights, the resulting tsvector can be combined with other tsvectors using the setweight function to assign different importance levels to different parts of a document (e.g., title vs. body).
-
-```
-to_tsvector([config regconfig,] document text)
-```
-
-- config: (Optional) Specifies the text search configuration to use (e.g., 'english', 'simple'). If omitted, the default_text_search_config setting is used.
-- document: The text to be converted to a tsvector.
-
-```sql
-SELECT to_tsvector('english', 'The quick brown fox jumps over the lazy dog.');
-
---       to_tsvector
--- -----------------------
---  'brown':3 'dog':9 'fox':4 'jump':5 'lazy':8 'quick':2
-```
-
-This output shows the normalized lexemes along with their positions in the original string. Notice how "jumps" became "jump" and common words like "the" and "over" were removed.
-
-to_tsvector is typically used in conjunction with **to_tsquery** (which converts a search query into a **tsquery** data type) and the **@@** operator to perform **full-text searches**. It can also be used to create **tsvector** columns in tables, often with a **GIN** index, to optimize search performance.
-
 ## GIN (Generalized Inverted Index)
 
 It is a powerful indexing technique particularly well-suited for indexing composite values and supporting search operations on their components.
@@ -1408,7 +1380,7 @@ It is a powerful indexing technique particularly well-suited for indexing compos
   - **Syntax**: GIN indexes are created using the CREATE INDEX command with the USING GIN clause. For example:
 
 ```sql
-CREATE INDEX my_gin_index ON my_table USING GIN (my_jsonb_column [operator_class]);
+CREATE INDEX my_gin_index ON my_table USING GIN(my_jsonb_column [operator_class]);
 ```
 
   - **Operator Classes**: GIN indexes rely on specific "operator classes" that define how keys are extracted from the data and how queries are processed. PostgreSQL provides built-in operator classes (array_ops, jsonb_ops, jsonb_path_ops, tsvector_ops, gin_trgm_ops, btree_gin) for common types like arrays and JSONB, and custom operator classes can be developed for other data types.
@@ -1491,4 +1463,104 @@ SELECT jsonb_array_elements(data->'my_array') FROM my_table;
 - **jsonb_each()**: Expands a jsonb object into a set of rows, each containing a key-value pair.
 ```sql
 SELECT * FROM jsonb_each(data);
+```
+
+## Full Text Search
+
+- **tsvector**: A data type representing a **document** after processing for full-text search. It contains lexemes (normalized words) and their positions.
+- **tsquery**: A data type representing a **search query**, potentially combining lexemes with boolean and proximity operators.
+- **Lexemes**: The base form of a word, obtained through stemming (e.g., "running" becomes "run").
+- **Stop words**: Common, less meaningful words (e.g., "the", "a") removed during tsvector creation.
+- **Configuration**: Defines parsing rules, dictionaries for stemming and stop word removal (e.g., english, simple).
+
+- **to_tsvector(config, text)**: Converts a string to a tsvector using the specified configuration.
+```sql
+SELECT to_tsvector('english', 'The quick brown fox jumps over the lazy dog');
+-- Output: 'brown':3 'dog':9 'fox':4 'jump':5 'lazi':8 'quick':2
+```
+
+- **to_tsquery(config, text)**: Converts a string to a tsquery using the specified configuration.
+```sql
+SELECT to_tsquery('english', 'quick & fox | dog');
+-- Output: 'quick' & 'fox' | 'dog'
+```
+
+- **@@ (Match Operator)**: Checks for a match between a tsvector and a tsquery.
+```sql
+SELECT to_tsvector('english', 'The quick brown fox') @@ to_tsquery('english', 'quick & fox');
+-- Output: t
+```
+
+- **ts_rank(tsvector, tsquery, [int4 options])**: Calculates the relevance score of a tsvector against a tsquery. Higher scores indicate greater relevance.
+```sql
+SELECT ts_rank(to_tsvector('english', 'The quick brown fox'), to_tsquery('english', 'quick & fox'));
+SELECT * FROM my_table WHERE column_vector @@ to_tsquery('english', 'search & term') ORDER BY ts_rank(column_vector, to_tsquery('english', 'search & term')) DESC;
+```
+
+- **ts_headline(tsvector, tsquery, [text options])**: Generates a highlighted excerpt of the document based on the tsquery.
+```sql
+SELECT ts_headline('english', 'The quick brown fox jumps over the lazy dog', to_tsquery('english', 'fox'));
+-- Output: The quick brown <b>fox</b> jumps over the lazy dog
+```
+
+**tsquery Operators**
+
+- **& (AND)**: Both terms must be present.
+- **| (OR)**: At least one term must be present.
+- **! (NOT)**: Excludes documents containing the specified term.
+- **<-> (FOLLOWED BY)**: Terms must appear consecutively.
+- **<N> (FOLLOWED BY with distance)**: Terms must appear within N words of each other.
+- **: (Prefix Search)**: Matches words starting with the specified prefix (e.g., jump: matches "jumps", "jumping").
+- **() (Grouping)**: Used to control operator precedence.
+
+**Using a tsvector column for efficiency:**
+
+For performance, it's recommended to create a dedicated tsvector column (often as a generated column) and index it with a GIN index:
+
+```sql
+-- Add a generated tsvector column
+ALTER TABLE your_table
+ADD COLUMN document_tsv tsvector GENERATED ALWAYS AS (to_tsvector('english', your_text_column)) STORED;
+
+-- Create a GIN index on the tsvector column
+CREATE INDEX idx_your_table_document_tsv ON your_table USING GIN (document_tsv);
+
+-- Now, your query becomes more efficient:
+SELECT * FROM your_table
+WHERE document_tsv @@ to_tsquery('english', 'search terms');
+```
+
+### to_tsvector
+
+Function central to full-text search capabilities. It converts a textual document into a tsvector data type, which is a highly optimized representation for text searching. Here's how to_tsvector works and why it's used:
+  - **Tokenization**: It breaks down the input text into individual words or tokens.
+  - **Normalization (Stemming/Lemmatization)**: It reduces words to their base forms (lexemes), removing variations caused by suffixes. For example, "watches," "watched," and "watching" all become "watch." This ensures that searches for "watch" will match all these variations.
+  - **Stop Word Removal**: It can remove common, less meaningful words (stop words) like "the," "a," "is," etc., which typically don't contribute significantly to search relevance. The set of stop words is defined by the text search configuration.
+  - **Position Information**: It records the positions of the lexemes within the original document. This information is crucial for advanced search features like phrase searching (e.g., "quick brown fox") and for ranking search results based on word proximity.
+  - **Weighting**: While to_tsvector itself doesn't apply weights, the resulting tsvector can be combined with other tsvectors using the setweight function to assign different importance levels to different parts of a document (e.g., title vs. body).
+
+```
+to_tsvector([config,] document)
+```
+
+- config: (Optional) Specifies the text search configuration to use (e.g., 'english', 'simple'). If omitted, the default_text_search_config setting is used.
+- document: The text to be converted to a tsvector.
+
+```sql
+SELECT to_tsvector('english', 'The quick brown fox jumps over the lazy dog.');
+
+--       to_tsvector
+-- -----------------------
+--  'brown':3 'dog':9 'fox':4 'jump':5 'lazy':8 'quick':2
+```
+
+This output shows the normalized lexemes along with their positions in the original string. Notice how "jumps" became "jump" and common words like "the" and "over" were removed.
+
+to_tsvector is typically used in conjunction with **to_tsquery** (which converts a search query into a **tsquery** data type) and the **@@** operator to perform **full-text searches**. It can also be used to create **tsvector** columns in tables, often with a **GIN** index, to optimize search performance.
+
+```sql
+SELECT * FROM your_table
+WHERE to_tsvector('english', your_text_column) @@ to_tsquery('english', 'search terms');
+
+CREATE INDEX IF NOT EXISTS idx_name ON my_table USING GIN(to_tsvector('english', COALESCE(text_column,'')));
 ```
