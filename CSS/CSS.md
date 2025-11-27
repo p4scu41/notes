@@ -93,3 +93,11 @@ Filters provide a way to apply visual effects to HTML elements, similar to image
 ```
 
 Filters can be applied to various HTML elements, including images, backgrounds, borders, and even entire div containers. The backdrop-filter property offers similar effects but applies them to the area behind an element, requiring the element itself to be transparent or semi-transparent to reveal the effect.
+
+## isolate
+
+The **isolation** controls whether an element creates a new **stacking context**. When set to **isolate**, it prevents the element's content from blending with its background, especially when using CSS blend modes or managing **Z-index** layering in complex layouts. This ensures that effects like mix-blend-mode are confined within the isolated element and do not affect elements outside of it.
+
+## inset
+
+It is a shorthand that corresponds to the top, right, bottom, and/or left properties. It has the same multi-value syntax of the margin shorthand.  For this property to take effect it has to have the position property specified.

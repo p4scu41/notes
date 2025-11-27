@@ -77,6 +77,14 @@
   });
   ```
 
+- **$ Variables**
+
+When working with frontend frameworks like Vue.js, you might encounter **variables preceded by a dollar sign ($)**. This convention typically indicates a global or shared variable that is made available to your client-side components.
+
+- Shared Data: Inertia.js allows you to share data from your backend to your frontend components. This is often done through the share() method in your HandleInertiaRequests middleware. This shared data becomes globally accessible on the frontend.
+- Accessing Shared Data: In your Vue.js components, you can access this shared data through the usePage() hook.
+- The Dollar Sign Convention: While not strictly enforced by Inertia itself, it's a common practice in Vue.js and other frameworks to prefix global or injected properties with a dollar sign to distinguish them from local component data, for example $page.
+
 - **The page object**
 
   ```
@@ -146,6 +154,23 @@
   resources/js/Pages/User/Show.jsx
   ```
 
+  ```vue
+<script setup>
+import Layout from './Layout'
+import { Head } from '@inertiajs/vue3'
+
+defineProps({ user: Object })
+</script>
+
+<template>
+    <Layout>
+        <Head title="Welcome" />
+        <h1>Welcome</h1>
+        <p>Hello {{ user.name }}, welcome to your first Inertia app!</p>
+    </Layout>
+</template>
+  ```
+
 - **Persistent layouts**
 
   ```tsx
@@ -164,6 +189,29 @@
 
   export default Home
   ```
+
+```vue
+<script>
+import Layout from './Layout'
+
+export default {
+    // Using a render function...
+    layout: (h, page) => h(Layout, [page]),
+
+    // Using shorthand syntax...
+    layout: Layout,
+}
+</script>
+
+<script setup>
+defineProps({ user: Object })
+</script>
+
+<template>
+    <h1>Welcome</h1>
+    <p>Hello {{ user.name }}, welcome to your first Inertia app!</p>
+</template>
+```
 
 - **Default layout**
 
@@ -415,9 +463,17 @@
 
 - ### **Links**
 
+The wayfinder:generate command can be used to generate TypeScript definitions for your routes and controller methods. You don't require to run this command because when you run your Vite development server (e.g., npm run dev), the generate command will be automatically executed and re-executed as needed, ensuring your frontend's TypeScript definitions are always synchronized with your Laravel backend.
+
+```
+php artisan wayfinder:generate
+```
+
+By default, Wayfinder generates files in three directories (wayfinder, actions, and routes) within resources/js. You can safely .gitignore the wayfinder, actions, and routes directories as they are completely re-generated on every build.
+
   ```tsx
   import { Link } from '@inertiajs/react'
-  import { show } from 'App/Http/Controllers/UserController' // Wayfinder
+  import { show } from '@/actions/App/Http/Controllers/UserController' // Wayfinder
 
   <Link href="/">Home</Link>
   <Link href="/logout" method="post" as="button">Logout</Link>
@@ -428,6 +484,7 @@
   <Link href="/search" data={query} preserveState>Search</Link>
   <Link preserveScroll href="/">Home</Link>
   <Link href="/users?active=true" only={['users']}>Show active</Link>
+  <Link href="/another-page" viewTransition>Navigate</Link>
 
   import { usePage } from '@inertiajs/react'
 
@@ -444,6 +501,27 @@
   ```
 
   - While a link is making an active request, a _data-loading_ attribute is added
+
+```vue
+import { Link } from '@inertiajs/vue3'
+
+<Link href="/endpoint" method="post" :data="{ foo: bar }">Save</Link>
+<Link href="/endpoint" :headers="{ foo: bar }">Save</Link>
+<Link href="/" preserve-scroll>Home</Link>
+<input v-model="query" type="text" />
+<Link href="/search" :data="{ query }" preserve-state>Search</Link>
+<Link href="/users?active=true" :only="['users']">Show active</Link>
+<Link href="/another-page" view-transition>Navigate</Link>
+
+// URL exact match...
+<Link href="/users" :class="{ 'active': $page.url === '/users' }">Users</Link>
+// Component exact match...
+<Link href="/users" :class="{ 'active': $page.component === 'Users/Index' }">Users</Link>
+// URL starts with (/users, /users/create, /users/1, etc.)...
+<Link href="/users" :class="{ 'active': $page.url.startsWith('/users') }">Users</Link>
+// Component starts with (Users/Index, Users/Create, Users/Show, etc.)...
+<Link href="/users" :class="{ 'active': $page.component.startsWith('Users') }">Users</Link>
+```
 
 - ### **Manual visits**
 
@@ -515,6 +593,45 @@
     )
   }
   ```
+
+```vue
+<script setup>
+import { computed } from 'vue'
+import { usePage } from '@inertiajs/vue3'
+
+const page = usePage()
+
+const user = computed(() => page.props.auth.user)
+</script>
+
+<template>
+    <main>
+        <header>
+            You are logged in as: {{ user.name }}
+        </header>
+        <article>
+            <slot />
+        </article>
+    </main>
+</template>
+```
+
+Flash messages
+
+```vue
+<template>
+    <main>
+        <header></header>
+        <article>
+            <div v-if="$page.props.flash.message" class="alert">
+                {{ $page.props.flash.message }}
+            </div>
+            <slot />
+        </article>
+        <footer></footer>
+    </main>
+</template>
+```
 
 - ### **Partial reloads**
 
