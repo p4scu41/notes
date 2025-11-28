@@ -79,11 +79,11 @@
 
 - **$ Variables**
 
-When working with frontend frameworks like Vue.js, you might encounter **variables preceded by a dollar sign ($)**. This convention typically indicates a global or shared variable that is made available to your client-side components.
+  When working with frontend frameworks like Vue.js, you might encounter **variables preceded by a dollar sign ($)**. This convention typically indicates a global or shared variable that is made available to your client-side components.
 
-- Shared Data: Inertia.js allows you to share data from your backend to your frontend components. This is often done through the share() method in your HandleInertiaRequests middleware. This shared data becomes globally accessible on the frontend.
-- Accessing Shared Data: In your Vue.js components, you can access this shared data through the usePage() hook.
-- The Dollar Sign Convention: While not strictly enforced by Inertia itself, it's a common practice in Vue.js and other frameworks to prefix global or injected properties with a dollar sign to distinguish them from local component data, for example $page.
+  - Shared Data: Inertia.js allows you to share data from your backend to your frontend components. This is often done through the share() method in your HandleInertiaRequests middleware. This shared data becomes globally accessible on the frontend.
+  - Accessing Shared Data: In your Vue.js components, you can access this shared data through the usePage() hook.
+  - The Dollar Sign Convention: While not strictly enforced by Inertia itself, it's a common practice in Vue.js and other frameworks to prefix global or injected properties with a dollar sign to distinguish them from local component data, for example $page.
 
 - **The page object**
 
@@ -154,21 +154,21 @@ When working with frontend frameworks like Vue.js, you might encounter **variabl
   resources/js/Pages/User/Show.jsx
   ```
 
-  ```vue
-<script setup>
-import Layout from './Layout'
-import { Head } from '@inertiajs/vue3'
+  ```tsx
+  <script setup>
+  import Layout from './Layout'
+  import { Head } from '@inertiajs/vue3'
 
-defineProps({ user: Object })
-</script>
+  defineProps({ user: Object })
+  </script>
 
-<template>
-    <Layout>
-        <Head title="Welcome" />
-        <h1>Welcome</h1>
-        <p>Hello {{ user.name }}, welcome to your first Inertia app!</p>
-    </Layout>
-</template>
+  <template>
+      <Layout>
+          <Head title="Welcome" />
+          <h1>Welcome</h1>
+          <p>Hello {{ user.name }}, welcome to your first Inertia app!</p>
+      </Layout>
+  </template>
   ```
 
 - **Persistent layouts**
@@ -190,28 +190,91 @@ defineProps({ user: Object })
   export default Home
   ```
 
-```vue
-<script>
-import Layout from './Layout'
+  ```tsx
+  <script>
+  import Layout from './Layout'
 
-export default {
-    // Using a render function...
-    layout: (h, page) => h(Layout, [page]),
+  export default {
+      // Using a render function...
+      layout: (h, page) => h(Layout, [page]),
 
-    // Using shorthand syntax...
-    layout: Layout,
-}
-</script>
+      // Using shorthand syntax...
+      layout: Layout,
+  }
+  </script>
 
-<script setup>
-defineProps({ user: Object })
-</script>
+  <script setup>
+      defineProps({ user: Object })
+  </script>
 
-<template>
-    <h1>Welcome</h1>
-    <p>Hello {{ user.name }}, welcome to your first Inertia app!</p>
-</template>
-```
+  <template>
+      <h1>Welcome</h1>
+      <p>Hello {{ user.name }}, welcome to your first Inertia app!</p>
+  </template>
+  ```
+
+  If you’re using **Vue 3.3+**, you can alternatively use **defineOptions** to define a layout within script setup. Older versions of Vue can use the [defineOptions plugin](https://vue-macros.dev/macros/define-options.html).
+
+  ```tsx
+  <script setup>
+    import Layout from './Layout'
+    defineOptions({ layout: Layout })
+  </script>
+  ```
+
+  When using defineOptions({ layout: Layout }) with Vue 3's script setup, you **cannot directly pass props** to the Layout component within defineOptions. The layout option expects a **component reference** or an array of component references, not a component with props.
+
+  To pass data to your Layout component when using this persistent layout approach, you have two primary methods: shared data ($page.props) or use a global event bus.
+
+  The event bus allows your page component to emit an event with data, which your layout component can then listen for.
+
+  ```tsx
+  // ---------- Page
+  <template>
+    <div>
+      <!-- ... page content ... -->
+    </div>
+  </template>
+
+  <script setup>
+  import { onMounted } from 'vue';
+  import mitt from 'mitt'; // Or any other event bus library
+
+  const emitter = mitt(); // Initialize your event bus
+
+  defineOptions({ layout: AppLayout });
+
+  onMounted(() => {
+    emitter.emit('update-layout-title', 'My Page Title');
+  });
+  </script>
+
+  // ---------- Layout
+  <template>
+    <div>
+      <h1>{{ layoutTitle }}</h1>
+      <slot />
+    </div>
+  </template>
+
+  <script setup>
+  import { ref, onMounted, onUnmounted } from 'vue';
+  import mitt from 'mitt';
+
+  const emitter = mitt();
+  const layoutTitle = ref('Default Title');
+
+  onMounted(() => {
+    emitter.on('update-layout-title', (title) => {
+      layoutTitle.value = title;
+    });
+  });
+
+  onUnmounted(() => {
+    emitter.off('update-layout-title');
+  });
+  </script>
+  ```
 
 - **Default layout**
 
@@ -225,6 +288,10 @@ defineProps({ user: Object })
 
       page.default.layout = page.default.layout || (page => <Layout children={page} />)
 
+      // Vue
+      // page.default.layout = page.default.layout || Layout
+      // page.default.layout ??= Layout
+
       return page
     },
     // ...
@@ -236,6 +303,9 @@ defineProps({ user: Object })
       let page = pages[`./Pages/${name}.jsx`]
 
       page.default.layout = name.startsWith('Public/') ? undefined : page => <Layout children={page} />
+
+      // Vue
+      // page.default.layout = name.startsWith('Public/') ? undefined : Layout
 
       return page
     },
@@ -463,13 +533,13 @@ defineProps({ user: Object })
 
 - ### **Links**
 
-The wayfinder:generate command can be used to generate TypeScript definitions for your routes and controller methods. You don't require to run this command because when you run your Vite development server (e.g., npm run dev), the generate command will be automatically executed and re-executed as needed, ensuring your frontend's TypeScript definitions are always synchronized with your Laravel backend.
+  The wayfinder:generate command can be used to generate TypeScript definitions for your routes and controller methods. You don't require to run this command because when you run your Vite development server (e.g., npm run dev), the generate command will be automatically executed and re-executed as needed, ensuring your frontend's TypeScript definitions are always synchronized with your Laravel backend.
 
-```
-php artisan wayfinder:generate
-```
+  ```
+  php artisan wayfinder:generate
+  ```
 
-By default, Wayfinder generates files in three directories (wayfinder, actions, and routes) within resources/js. You can safely .gitignore the wayfinder, actions, and routes directories as they are completely re-generated on every build.
+  By default, Wayfinder generates files in three directories (wayfinder, actions, and routes) within resources/js. You can safely .gitignore the wayfinder, actions, and routes directories as they are completely re-generated on every build.
 
   ```tsx
   import { Link } from '@inertiajs/react'
@@ -502,28 +572,280 @@ By default, Wayfinder generates files in three directories (wayfinder, actions, 
 
   - While a link is making an active request, a _data-loading_ attribute is added
 
-```vue
-import { Link } from '@inertiajs/vue3'
+  ```tsx
+  import { Link } from '@inertiajs/vue3'
 
-<Link href="/endpoint" method="post" :data="{ foo: bar }">Save</Link>
-<Link href="/endpoint" :headers="{ foo: bar }">Save</Link>
-<Link href="/" preserve-scroll>Home</Link>
-<input v-model="query" type="text" />
-<Link href="/search" :data="{ query }" preserve-state>Search</Link>
-<Link href="/users?active=true" :only="['users']">Show active</Link>
-<Link href="/another-page" view-transition>Navigate</Link>
+  <Link href="/endpoint" method="post" :data="{ foo: bar }">Save</Link>
+  <Link href="/endpoint" :headers="{ foo: bar }">Save</Link>
+  <Link href="/" preserve-scroll>Home</Link>
+  <input v-model="query" type="text" />
+  <Link href="/search" :data="{ query }" preserve-state>Search</Link>
+  <Link href="/users?active=true" :only="['users']">Show active</Link>
+  <Link href="/another-page" view-transition>Navigate</Link>
 
-// URL exact match...
-<Link href="/users" :class="{ 'active': $page.url === '/users' }">Users</Link>
-// Component exact match...
-<Link href="/users" :class="{ 'active': $page.component === 'Users/Index' }">Users</Link>
-// URL starts with (/users, /users/create, /users/1, etc.)...
-<Link href="/users" :class="{ 'active': $page.url.startsWith('/users') }">Users</Link>
-// Component starts with (Users/Index, Users/Create, Users/Show, etc.)...
-<Link href="/users" :class="{ 'active': $page.component.startsWith('Users') }">Users</Link>
-```
+  // URL exact match...
+  <Link href="/users" :class="{ 'active': $page.url === '/users' }">Users</Link>
+  // Component exact match...
+  <Link href="/users" :class="{ 'active': $page.component === 'Users/Index' }">Users</Link>
+  // URL starts with (/users, /users/create, /users/1, etc.)...
+  <Link href="/users" :class="{ 'active': $page.url.startsWith('/users') }">Users</Link>
+  // Component starts with (Users/Index, Users/Create, Users/Show, etc.)...
+  <Link href="/users" :class="{ 'active': $page.component.startsWith('Users') }">Users</Link>
+  ```
 
 - ### **Manual visits**
+
+  It’s also possible to manually make Inertia visits / requests programmatically via JavaScript. This is accomplished via the router.visit() method.
+
+  ```jsx
+  import { router } from '@inertiajs/vue3'
+
+  router.visit(url, {
+      method: 'get',
+      data: {},
+      replace: false,
+      preserveState: false,
+      preserveScroll: false,
+      only: [],
+      except: [],
+      headers: {},
+      errorBag: null,
+      forceFormData: false,
+      queryStringArrayFormat: 'brackets',
+      async: false,
+      showProgress: true,
+      fresh: false,
+      reset: [],
+      preserveUrl: false,
+      prefetch: false,
+      viewTransition: false,
+      onCancelToken: cancelToken => {},
+      onCancel: () => {},
+      onBefore: visit => {},
+      onStart: visit => {},
+      onProgress: progress => {},
+      onSuccess: page => {},
+      onError: errors => {},
+      onFinish: visit => {},
+      onPrefetching: () => {},
+      onPrefetched: () => {},
+  })
+
+  router.get(url, data, options)
+  router.post(url, data, options)
+  router.put(url, data, options)
+  router.patch(url, data, options)
+  router.delete(url, options)
+  router.reload(options) // Uses the current URL with preserveState and preserveScroll both set to true
+  ```
+
+  Uploading files via put or patch is not supported in Laravel. Instead, make the request via **post**, including a **_method** field set to put or patch.
+
+  - Wayfinder
+
+  ```jsx
+  import { router } from '@inertiajs/vue3'
+  import { show, store, destroy } from 'App/Http/Controllers/UserController'
+
+  router.visit(show(1))
+  router.post(store())
+  router.delete(destroy(1))
+  ```
+
+  - Data
+
+  ```js
+  router.visit('/users', {
+      method: 'post',
+      data: {
+          name: 'John Doe',
+          email: 'john.doe@example.com',
+      },
+  })
+
+  // get(), post(), put(), and patch() methods all accept data as their second argument
+  router.post('/users', {
+      name: 'John Doe',
+      email: 'john.doe@example.com',
+  })
+  ```
+
+  - Custom Headers
+
+  ```js
+  router.post('/users', data, {
+      headers: {
+          'Custom-Header': 'value',
+      },
+  })
+  ```
+
+  - Global Visit Options
+
+  ```js
+  import { createApp, h } from 'vue'
+  import { createInertiaApp } from '@inertiajs/vue3'
+
+  createInertiaApp({
+      // ...
+      defaults: {
+          visitOptions: (href, options) => {
+              return {
+                  headers: {
+                      ...options.headers,
+                      'X-Custom-Header': 'value',
+                  },
+              }
+          },
+      },
+  })
+  ```
+
+  - File Uploads
+
+  ```js
+  router.post('/companies', data, {
+      forceFormData: true,
+  })
+  ```
+
+  - Browser History
+
+  ```js
+  router.get('/users', { search: 'John' }, { replace: true })
+  ```
+
+  - Client Side Visits
+
+  ```js
+  // Update the browser’s history without making a server request.
+  router.push({
+      url: '/users',
+      component: 'Users',
+      props: { search: 'John' },
+      clearHistory: false,
+      encryptHistory: false,
+      preserveScroll: false,
+      preserveState: false,
+      errorBag: null,
+      onSuccess: (page) => {},
+      onError: (errors) => {},
+      onFinish: (visit) => {},
+  })
+
+  // All of the parameters are optional.
+  // By default, all passed paramaters (except errorBag) will be merged with the current page.
+  router.push({ url: '/users', component: 'Users' })
+
+  // If you need access to the current page’s props, you can pass a function to the props option
+  router.replace({
+      props: (currentProps) => ({ ...currentProps, search: 'John' })
+  })
+  ```
+
+  - Prop Helpers
+
+  ```js
+  // Updating page props without making server requests
+  // Replace a prop value...
+  router.replaceProp('user.name', 'Jane Smith')
+
+  // Append to an array prop...
+  router.appendToProp('messages', { id: 4, text: 'New message' })
+
+  // Prepend to an array prop...
+  router.prependToProp('tags', 'urgent')
+
+  router.prependToProp('notifications', (currentValue, props) => {
+    return {
+        id: Date.now(),
+        message: `Hello ${props.user.name}
+    }
+  )
+  ```
+
+  - State Preservation
+
+  ```js
+  // page visits to the same page create a fresh page component instance.
+  // This causes any local state, such as form inputs, scroll positions, and focus states to be lost.
+  router.get('/users', { search: 'John' }, { preserveState: true })
+
+  router.get('/users', { search: 'John' }, { preserveState: 'errors' })
+
+  // only preserve state if the response includes validation errors
+  router.get('/users', { search: 'John' }, { preserveState: 'errors' })
+
+  router.post('/users', data, {
+      preserveState: (page) => page.props.someProp === 'value',
+  })
+  ```
+
+  - Scroll Preservation
+
+  ```js
+  router.visit(url, { preserveScroll: true })
+
+  // only preserve the scroll position if the response includes validation errors
+  router.visit(url, { preserveScroll: 'errors' })
+
+  // lazily evaluate the preserveScroll option based on the response by providing a callback
+  router.post('/users', data, {
+    preserveScroll: (page) => page.props.someProp === 'value',
+  })
+  ```
+
+  - Partial Reloads
+
+  ```js
+  // request a subset of the props (data) from the server on subsequent visits to the same page
+  router.get('/users', { search: 'John' }, { only: ['users'] })
+  ```
+
+  - View Transitions
+
+  ```js
+  router.visit('/another-page', { viewTransition: true })
+  ```
+
+  - Visit Cancellation
+
+  ```js
+  router.post('/users', data, {
+    onCancelToken: (cancelToken) => (this.cancelToken = cancelToken),
+  })
+
+  // Cancel the visit...
+  this.cancelToken.cancel()
+  ```
+
+  - Event Callbacks
+
+  ```js
+  router.post('/users', data, {
+    onBefore: (visit) => {}, // Returning false will cause the visit to be cancelled
+    onStart: (visit) => {},
+    onProgress: (progress) => {},
+    onSuccess: (page) => {},
+    onError: (errors) => {},
+    onCancel: () => {},
+    onFinish: visit => {},
+    onPrefetching: () => {},
+    onPrefetched: () => {},
+  })
+
+  router.post(url, {
+    onSuccess: () => {
+        return Promise.all([
+            this.firstTask(),
+            this.secondTask()
+        ])
+    }
+    onFinish: visit => {
+        // Not called until firstTask() and secondTask() have finished
+    },
+  })
+  ```
 
 - ### **Forms**
 
@@ -531,7 +853,9 @@ import { Link } from '@inertiajs/vue3'
 
 - ### **Validation**
 
-- ### **Data & Props**
+- ### **View Transitions**
+
+- ## **Data & Props**
 
 - ### **Shared data**
   - Server-side
@@ -594,44 +918,44 @@ import { Link } from '@inertiajs/vue3'
   }
   ```
 
-```vue
-<script setup>
-import { computed } from 'vue'
-import { usePage } from '@inertiajs/vue3'
+  ```tsx
+  <script setup>
+  import { computed } from 'vue'
+  import { usePage } from '@inertiajs/vue3'
 
-const page = usePage()
+  const page = usePage()
 
-const user = computed(() => page.props.auth.user)
-</script>
+  const user = computed(() => page.props.auth.user)
+  </script>
 
-<template>
-    <main>
-        <header>
-            You are logged in as: {{ user.name }}
-        </header>
-        <article>
-            <slot />
-        </article>
-    </main>
-</template>
-```
+  <template>
+      <main>
+          <header>
+              You are logged in as: {{ user.name }}
+          </header>
+          <article>
+              <slot />
+          </article>
+      </main>
+  </template>
+  ```
 
-Flash messages
+  Flash messages
 
-```vue
-<template>
-    <main>
-        <header></header>
-        <article>
-            <div v-if="$page.props.flash.message" class="alert">
-                {{ $page.props.flash.message }}
-            </div>
-            <slot />
-        </article>
-        <footer></footer>
-    </main>
-</template>
-```
+  ```tsx
+  <template>
+      <main>
+          <header></header>
+          <article>
+              <div v-if="$page.props.flash.message" class="alert">
+                  {{ $page.props.flash.message }}
+              </div>
+              <slot />
+          </article>
+          <footer></footer>
+      </main>
+  </template>
+  ```
 
 - ### **Partial reloads**
 
@@ -645,9 +969,11 @@ Flash messages
 
 - ### **Load when visible**
 
+- ### **Infinite Scroll**
+
 - ### **Remembering state**
 
-- ### **Security**
+- ## **Security**
 
 - ### **Authentication**
 
@@ -657,7 +983,7 @@ Flash messages
 
 - ### **History encryption**
 
-- ### **Advanced**
+- ## **Advanced**
 
 - ### **Asset versioning**
 
@@ -666,12 +992,9 @@ Flash messages
   ```tsx
   createInertiaApp({
     resolve: name => {
-      const pages = import.meta.glob('./Pages/**/*.jsx', { eager: false })
-      let page = pages[`./Pages/${name}.jsx`]
+      const pages = import.meta.glob('./Pages/**/*.vue')
 
-      page.default.layout = page.default.layout || (page => <Layout children={page} />)
-
-      return page
+      return pages[`./Pages/${name}.vue`]()
     },
     // ...
   })
@@ -693,7 +1016,6 @@ Flash messages
       chunkFilename: 'js/[name].js?id=[chunkhash]',
     }
     ```
-
 
 - ### **Error handling**
 
@@ -754,9 +1076,61 @@ Flash messages
       NProgress.remove();
     }
   });
+
+  import { progress } from '@inertiajs/vue3'
+
+  progress.start()      // Begin progress animation
+  progress.set(0.25)    // Set to 25% complete
+  progress.finish()     // Complete and fade out
+  progress.reset()      // Reset to start
+  progress.remove()     // Complete and remove from DOM
+  progress.hide()       // Hide progress bar
+  progress.reveal()     // Show progress bar
+
+  progress.isStarted()  // Returns boolean
+  progress.getStatus()  // Returns current percentage or null
+
+  progress.hide()    // Counter = 1, bar hidden
+  progress.hide()    // Counter = 2, bar still hidden
+  progress.reveal()  // Counter = 1, bar still hidden
+  progress.reveal()  // Counter = 0, bar now visible
+
+  // Force reveal bypasses the counter
+  progress.reveal(true)
+
+  // Disable the progress indicator
+  router.get('/settings', {}, { showProgress: false })
+  router.get('/settings', {}, { async: true })
+  // Enable the progress indicator with async requests
+  router.get('/settings', {}, { async: true, showProgress: true })
   ```
 
 - ### **Scroll management**
+
+  ```jsx
+  // When navigating between pages, automatically resetting the scroll position of the document body
+  // (as well as any scroll regions you’ve defined) back to the top.
+  // Prevent the default scroll resetting when making visits
+  router.visit(url, { preserveScroll: true })
+
+  // only preserve the scroll position if the response includes validation errors
+  router.visit(url, { preserveScroll: 'errors' })
+
+  // lazily evaluate the preserveScroll option based on the response by providing a callback
+  router.post('/users', data, {
+    preserveScroll: (page) => page.props.someProp === 'value',
+  })
+
+  <Link href="/" preserve-scroll>Home</Link>
+  ```
+
+  If your app doesn’t use document body scrolling, but instead has scrollable elements (using the overflow CSS property), scroll resetting will not work. In these situations, you must tell Inertia which scrollable elements to manage by adding the scroll-region attribute to the element.
+
+  ```html
+  <div class="overflow-y-auto" scroll-region="">
+    <!-- Your page content -->
+  </div>
+  ```
 
 - ### **Server-side rendering**
 
