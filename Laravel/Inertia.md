@@ -849,9 +849,713 @@
 
 - ### **Forms**
 
+  Inertia provides two primary ways to build forms: the `<Form>` component and the `useForm` helper. Both integrate with your server-side framework's validation and handle form submissions without full page reloads.
+
+  #### Form Component
+
+  Inertia provides a `<Form>` component that behaves much like a classic HTML form, but uses Inertia under the hood to avoid full page reloads. This is the simplest way to get started with forms in Inertia.
+
+  ```jsx
+  <script setup>
+  import { Form } from '@inertiajs/vue3'
+  </script>
+
+  <template>
+      <Form action="/users" method="post">
+          <input type="text" name="name" />
+          <input type="email" name="email" />
+          <button type="submit">Create User</button>
+      </Form>
+  </template>
+  ```
+
+  Just like a traditional HTML form, there is no need to attach a `v-model` to your input fields, just give each input a `name` attribute and the `Form` component will handle the data submission for you.
+
+  The component also supports nested data structures, file uploads, and dotted key notation.
+
+  ```jsx
+  <template>
+      <Form action="/reports" method="post">
+          <input type="text" name="name" />
+          <textarea name="report[description]"></textarea>
+          <input type="text" name="report[tags][]" />
+          <input type="file" name="documents" multiple />
+          <button type="submit">Create Report</button>
+      </Form>
+  </template>
+  ```
+
+  You can pass a `transform` prop to modify the form data before submission, although hidden inputs work too.
+
+  ```jsx
+  <template>
+      <Form
+          action="/posts"
+          method="post"
+          :transform="data => ({ ...data, user_id: 123 })"
+      >
+          <input type="text" name="title" />
+          <button type="submit">Create Post</button>
+      </Form>
+  </template>
+  ```
+
+  - Wayfinder
+
+  When using [Wayfinder](https://github.com/laravel/wayfinder), you can pass the resulting object directly to the `action` prop. The Form component will infer the HTTP method and URL from the Wayfinder object.
+
+  ```jsx
+  <script setup>
+  import { Form } from '@inertiajs/vue3'
+  import { store } from 'App/Http/Controllers/UserController'
+  </script>
+
+  <template>
+      <Form :action="store()">
+          <input type="text" name="name" />
+          <input type="email" name="email" />
+          <button type="submit">Create User</button>
+      </Form>
+  </template>
+  ```
+
+  - Default Values
+
+  You can set default values for form inputs using standard HTML attributes. Use `defaultValue` for text inputs and textareas, and `defaultChecked` for checkboxes and radios.
+
+  ```jsx
+  <template>
+      <Form action="/users" method="post">
+          <input type="text" name="name" defaultValue="John Doe" />
+
+          <select name="country">
+              <option value="us">United States</option>
+              <option value="ca">Canada</option>
+              <option value="uk" selected>United Kingdom</option>
+          </select>
+
+          <input type="checkbox" name="subscribe" value="yes" defaultChecked />
+
+          <button type="submit">Submit</button>
+      </Form>
+  </template>
+  ```
+
+  - Checkbox Inputs
+
+  When working with checkboxes, you may want to add an explicit `value` attribute such as `value="1"`. Without a value attribute, checked checkboxes will submit as `"on"`, which some server-side validation rules may not recognize as a proper boolean value.
+
+  - Slot Props
+
+  The `<Form>` component exposes reactive state and helper methods through its default slot, giving you access to form processing state, errors, and utility functions.
+
+  ```jsx
+  <template>
+      <Form
+          action="/users"
+          method="post"
+          #default="{
+              errors,
+              hasErrors,
+              processing,
+              progress,
+              wasSuccessful,
+              recentlySuccessful,
+              setError,
+              clearErrors,
+              resetAndClearErrors,
+              defaults,
+              isDirty,
+              reset,
+              submit,
+          }"
+      >
+          <input type="text" name="name" />
+
+          <div v-if="errors.name">
+              {{ errors.name }}
+          </div>
+
+          <button type="submit" :disabled="processing">
+              {{ processing ? 'Creating...' : 'Create User' }}
+          </button>
+
+          <div v-if="wasSuccessful">User created successfully!</div>
+      </Form>
+  </template>
+  ```
+
+  The `defaults` method allows you to update the form's default values to match the current field values. When called, subsequent `reset()` calls will restore fields to these new defaults, and the `isDirty` property will track changes from these updated defaults. Unlike `useForm`, this method accepts no arguments and always uses all current form values.
+
+  The `errors` object uses dotted notation for nested fields, allowing you to display validation messages for complex form structures.
+
+  ```jsx
+  <Form action="/users" method="post" #default="{ errors }">
+      <input type="text" name="user.name" />
+      <div v-if="errors['user.name']">{{ errors['user.name'] }}</div>
+  </Form>
+  ```
+
+  - Props and Options
+
+  In addition to `action` and `method`, the `<Form>` component accepts several props. Many of them are identical to the options available in Inertia's visit options.
+
+  ```jsx
+  <template>
+      <Form
+          action="/profile"
+          method="put"
+          error-bag="profile"
+          query-string-array-format="indices"
+          :headers="{ 'X-Custom-Header': 'value' }"
+          :show-progress="false"
+          :transform="data => ({ ...data, timestamp: Date.now() })"
+          :invalidate-cache-tags="['users', 'dashboard']"
+          disable-while-processing
+          :options="{
+              preserveScroll: true,
+              preserveState: true,
+              preserveUrl: true,
+              replace: true,
+              only: ['users', 'flash'],
+              except: ['secret'],
+              reset: ['page'],
+          }"
+      >
+          <input type="text" name="name" />
+          <button type="submit">Update</button>
+      </Form>
+  </template>
+  ```
+
+  Some props are intentionally grouped under `options` instead of being top-level to avoid confusion. For example, `only`, `except`, and `reset` relate to *partial reloads*, not *partial submissions*. The general rule: top-level props are for the form submission itself, while `options` control how Inertia handles the subsequent visit.
+
+  When setting the `disable-while-processing` prop, the `Form` component will add the `inert` attribute to the HTML `form`tag while the form is processing to prevent user interaction.
+
+  To style the form while it's processing, you can target the inert form in the following ways.
+
+  ```jsx
+  <Form
+      action="/profile"
+      method="put"
+      disableWhileProcessing
+      className="inert:opacity-50 inert:pointer-events-none"
+  >
+      {/* Your form fields here */}
+  </Form>
+  ```
+
+  - Events
+
+  The `<Form>` component emits all the standard visit events for form submissions.
+
+  ```jsx
+  <template>
+      <Form
+          action="/users"
+          method="post"
+          @before="handleBefore"
+          @start="handleStart"
+          @progress="handleProgress"
+          @success="handleSuccess"
+          @error="handleError"
+          @finish="handleFinish"
+          @cancel="handleCancel"
+          @cancelToken="handleCancelToken"
+      >
+          <input type="text" name="name" />
+          <button type="submit">Create User</button>
+      </Form>
+  </template>
+  ```
+
+  - Resetting the Form
+
+  The `Form` component provides several attributes that allow you to reset the form after a submission.
+
+  `resetOnSuccess` may be used to reset the form after a successful submission.
+
+  ```jsx
+  <template>
+      <!-- Reset the entire form on success -->
+      <Form action="/users" method="post" resetOnSuccess>
+          <input type="text" name="name" />
+          <input type="email" name="email" />
+          <button type="submit">Submit</button>
+      </Form>
+
+      <!-- Reset specific fields on success -->
+      <Form action="/users" method="post" :resetOnSuccess="['name']">
+          <input type="text" name="name" />
+          <input type="email" name="email" />
+          <button type="submit">Submit</button>
+      </Form>
+  </template>
+  ```
+
+  `resetOnError` may be used to reset the form after errors.
+
+  ```jsx
+  <template>
+      <!-- Reset the entire form on success -->
+      <Form action="/users" method="post" resetOnError>
+          <input type="text" name="name" />
+          <input type="email" name="email" />
+          <button type="submit">Submit</button>
+      </Form>
+
+      <!-- Reset specific fields on success -->
+      <Form action="/users" method="post" :resetOnError="['name']">
+          <input type="text" name="name" />
+          <input type="email" name="email" />
+          <button type="submit">Submit</button>
+      </Form>
+  </template>
+  ```
+
+  - Setting New Default Values
+
+  The `Form` component provides the `setDefaultsOnSuccess` attribute to set the current form values as the new defaults after a successful submission.
+
+  ```jsx
+  <template>
+      <Form action="/users" method="post" setDefaultsOnSuccess>
+          <input type="text" name="name" />
+          <input type="email" name="email" />
+          <button type="submit">Submit</button>
+      </Form>
+  </template>
+  ```
+
+  - Dotted Key Notation
+
+  The `<Form>` component supports dotted key notation for creating nested objects from flat input names. This provides a convenient way to structure form data.
+
+  ```jsx
+  <template>
+      <Form action="/users" method="post">
+          <input type="text" name="user.name" />
+          <input type="text" name="user.skills[]" />
+          <input type="text" name="address.street" />
+          <button type="submit">Submit</button>
+      </Form>
+  </template>
+  ```
+
+  The example above would generate the following data structure.
+
+  ```json
+  {
+      "user": {
+          "name": "John Doe",
+          "skills": ["JavaScript"]
+      },
+      "address": {
+          "street": "123 Main St"
+      }
+  }
+  ```
+
+  If you need literal dots in your field names (not as nested object separators), you can escape them using backslashes.
+
+  ```jsx
+  <template>
+      <Form action="/config" method="post">
+          <input type="text" name="app\.name" />
+          <input type="text" name="settings.theme\.mode" />
+          <button type="submit">Save</button>
+      </Form>
+  </template>
+  ```
+
+  The example above would generate the following data structure.
+
+  ```json
+  {
+      "app.name": "My Application",
+      "settings": {
+          "theme.mode": "dark"
+      }
+  }
+  ```
+
+  - Programmatic Access
+
+  You can access the form's methods programmatically using refs. This provides an alternative to `slot props` when you need to trigger form actions from outside the form.
+
+  ```jsx
+  <script setup>
+  import { ref } from 'vue'
+  import { Form } from '@inertiajs/vue3'
+
+  const formRef = ref()
+
+  const handleSubmit = () => {
+      formRef.value.submit()
+  }
+  </script>
+
+  <template>
+      <Form ref="formRef" action="/users" method="post">
+          <input type="text" name="name" />
+          <button type="submit">Submit</button>
+      </Form>
+
+      <button @click="handleSubmit">Submit Programmatically</button>
+  </template>
+  ```
+
+  #### Form Helper
+
+  In addition to the `<Form>` component, Inertia also provides a `useForm` helper for when you need programmatic control over your form's data and submission behavior.
+
+  ```jsx
+  <script setup>
+  import { useForm } from '@inertiajs/vue3'
+
+  const form = useForm({
+      email: null,
+      password: null,
+      remember: false,
+  })
+  </script>
+
+  <template>
+      <form @submit.prevent="form.post('/login')">
+          <input type="text" v-model="form.email">
+          <div v-if="form.errors.email">{{ form.errors.email }}</div>
+          <input type="password" v-model="form.password">
+          <div v-if="form.errors.password">{{ form.errors.password }}</div>
+          <input type="checkbox" v-model="form.remember"> Remember Me
+          <button type="submit" :disabled="form.processing">Login</button>
+      </form>
+  </template>
+  ```
+
+  To submit the form, you may use the `get`, `post`, `put`, `patch`and `delete` methods.
+
+  ```js
+  form.submit(method, url, options)
+  form.get(url, options)
+  form.post(url, options)
+  form.put(url, options)
+  form.patch(url, options)
+  form.delete(url, options)
+  ```
+
+  The submit methods support all of the typical `visit options`, such as `preserveState`, `preserveScroll`, and event callbacks, which can be helpful for performing tasks on successful form submissions. For example, you might use the `onSuccess` callback to reset inputs to their original state.
+
+  ```js
+  form.post('/profile', {
+      preserveScroll: true,
+      onSuccess: () => form.reset('password'),
+  })
+  ```
+
+  If you need to modify the form data before it's sent to the server, you can do so via the `transform()` method.
+
+  ```js
+  form
+      .transform((data) => ({
+          ...data,
+          remember: data.remember ? 'on' : '',
+      }))
+      .post('/login')
+  ```
+
+  You can use the `processing` property to track if a form is currently being submitted. This can be helpful for preventing double form submissions by disabling the submit button.
+
+  ```jsx
+  <button type="submit" :disabled="form.processing">Submit</button>
+  ```
+
+  If your form is uploading files, the current progress event is available via the `progress` property, allowing you to easily display the upload progress.
+
+  ```jsx
+  <progress v-if="form.progress" :value="form.progress.percentage" max="100">
+      {{ form.progress.percentage }}%
+  </progress>
+  ```
+
+  - Form Errors
+
+  If there are form validation errors, they are available via the `errors` property. When building Laravel powered Inertia applications, form errors will automatically be populated when your application throws instances of `ValidationException`, such as when using `{'$request->validate()'}`.
+
+  ```jsx
+  <div v-if="form.errors.email">{{ form.errors.email }}</div>
+  ```
+
+  To determine if a form has any errors, you may use the `hasErrors` property. To clear form errors, use the `clearErrors()` method.
+
+  ```js
+  // Clear all errors...
+  form.clearErrors()
+
+  // Clear errors for specific fields...
+  form.clearErrors('field', 'anotherfield')
+  ```
+
+  If you're using client-side input validation libraries or do client-side validation manually, you can set your own errors on the form using the `setErrors()` method.
+
+  ```js
+  // Set a single error...
+  form.setError('field', 'Your error message.');
+
+  // Set multiple errors at once...
+  form.setError({
+      foo: 'Your error message for the foo field.',
+      bar: 'Some other error for the bar field.'
+  });
+  ```
+
+  Unlike an actual form submission, the page's props remain unchanged when manually setting errors on a form instance.
+
+  When a form has been successfully submitted, the `wasSuccessful` property will be `true`. In addition to this, forms have a `recentlySuccessful` property, which will be set to `true` for two seconds after a successful form submission. This property can be utilized to show temporary success messages.
+
+  You may customize the duration of the `recentlySuccessful` state by setting the `form.recentlySuccessfulDuration` option in your `application defaults`. The default value is `2000` milliseconds.
+
+  - Resetting the Form
+
+  To reset the form's values back to their default values, you can use the `reset()` method.
+
+  ```js
+  // Reset the form...
+  form.reset()
+
+  // Reset specific fields...
+  form.reset('field', 'anotherfield')
+  ```
+
+  Sometimes, you may want to restore your form fields to their default values and clear any validation errors at the same time. Instead of calling `reset()` and `clearErrors()` separately, you can use the `resetAndClearErrors()` method, which combines both actions into a single call.
+
+  ```js
+  // Reset the form and clear all errors...
+  form.resetAndClearErrors()
+
+  // Reset specific fields and clear their errors...
+  form.resetAndClearErrors('field', 'anotherfield')
+  ```
+
+  - Setting New Default Values
+
+  If your form's default values become outdated, you can use the `defaults()` method to update them. Then, the form will be reset to the correct values the next time the `reset()` method is invoked.
+
+  ```js
+  // Set the form's current values as the new defaults...
+  form.defaults()
+
+  // Update the default value of a single field...
+  form.defaults('email', 'updated-default@example.com')
+
+  // Update the default value of multiple fields...
+  form.defaults({
+      name: 'Updated Example',
+      email: 'updated-default@example.com',
+  })
+  ```
+
+  - Form Field Change Tracking
+
+  To determine if a form has any changes, you may use the `isDirty` property.
+
+  ```jsx
+  <div v-if="form.isDirty">There are unsaved form changes.</div>
+  ```
+
+  - Canceling Form Submissions
+
+  To cancel a form submission, use the `cancel()` method.
+
+  ```js
+  form.cancel()
+  ```
+
+  - Form Data and History State
+
+  To instruct Inertia to store a form's data and errors in `history state`, you can provide a unique form key as the first argument when instantiating your form.
+
+  ```js
+  import { useForm } from '@inertiajs/vue3'
+
+  const form = useForm('CreateUser', data)
+  const form = useForm(`EditUser:${user.id}\
+  ```
+
+  - Wayfinder
+
+  You can pass the Wayfinder resulting object directly to the `form.submit` method. The form helper will infer the HTTP method and URL from the Wayfinder object.
+
+  ```js
+  import { useForm } from '@inertiajs/vue3'
+  import { store } from 'App/Http/Controllers/UserController'
+
+  const form = useForm({
+      name: 'John Doe',
+      email: 'john.doe@example.com',
+  })
+
+  form.submit(store())
+  ```
+
+  #### Server-Side Responses
+
+  When using Inertia, you don't typically inspect form responses client-side like you would with traditional XHR/fetch requests. Instead, your server-side route or controller issues a `redirect` response after processing the form, often redirecting to a success page.
+
+  ```php
+  class UsersController extends Controller
+  {
+      public function index()
+      {
+          return Inertia::render('Users/Index', [
+              'users' => User::all(),
+          ]);
+      }
+
+      public function store(Request $request)
+      {
+          User::create($request->validate([
+              'first_name' => ['required', 'max:50'],
+              'last_name' => ['required', 'max:50'],
+              'email' => ['required', 'max:50', 'email'],
+          ]));
+
+          return to_route('users.index');
+      }
+  }
+  ```
+
+  #### Server-Side Validation
+
+  Both the `<Form>` component and `useForm` helper automatically handle server-side validation errors. When your server returns validation errors, they're automatically available in the `errors` object without any additional configuration.
+
+  Unlike traditional XHR/fetch requests where you might check for a `422` status code, Inertia handles validation errors as part of its redirect-based flow, just like classic server-side form submissions, but without the full page reload.
+
+  #### Manual Form Submissions
+
+  It's also possible to submit forms manually using Inertia's `router` methods directly, without using the `<Form>` component or `useForm` helper:
+
+  ```jsx
+  <script setup>
+  import { reactive } from 'vue'
+  import { router } from '@inertiajs/vue3'
+
+  const form = reactive({
+      first_name: null,
+      last_name: null,
+      email: null,
+  })
+
+  function submit() {
+      router.post('/users', form)
+  }
+  </script>
+
+  <template>
+      <form @submit.prevent="submit">
+          <label for="first_name">First name:</label>
+          <input id="first_name" v-model="form.first_name" />
+          <label for="last_name">Last name:</label>
+          <input id="last_name" v-model="form.last_name" />
+          <label for="email">Email:</label>
+          <input id="email" v-model="form.email" />
+          <button type="submit">Submit</button>
+      </form>
+  </template>
+  ```
+
+  #### File Uploads
+
+  When making requests or form submissions that include files, Inertia will automatically convert the request data into a `FormData` object. This works with the `<Form>` component, `useForm` helper, and manual router submissions.
+
 - ### **File uploads**
 
 - ### **Validation**
+
+  Handling server-side validation errors works differently because Inertia never receives `422` responses.
+
+  On submitting, if there are server-side validation errors, you don't return those errors as a `422` JSON response. Instead, you redirect (server-side) the user back to the form page they were previously on, flashing the validation errors in the session. These validation errors automatically get shared with Inertia, making them available client-side as page props which you can display in your form. Inertia checks the `page.props.errors` object for the existence of any errors. In the event that errors are present, the request's `onError()` callback will be called instead of the `onSuccess()` callback.
+
+  ```jsx
+  import { reactive } from 'vue'
+  import { router } from '@inertiajs/vue3'
+
+  defineProps({ errors: Object }) // Important to get access in the template
+
+  const form = reactive({
+      first_name: null,
+      last_name: null,
+      email: null,
+  })
+
+  function submit() {
+      router.post('/users', form)
+  }
+  </script>
+
+  <template>
+      <form @submit.prevent="submit">
+          <label for="first_name">First name:</label>
+          <input id="first_name" v-model="form.first_name" />
+          <div v-if="errors.first_name">{{ errors.first_name }}</div>
+          <label for="last_name">Last name:</label>
+          <input id="last_name" v-model="form.last_name" />
+          <div v-if="errors.last_name">{{ errors.last_name }}</div>
+          <label for="email">Email:</label>
+          <input id="email" v-model="form.email" />
+          <div v-if="errors.email">{{ errors.email }}</div>
+          <button type="submit">Submit</button>
+      </form>
+  </template>
+  ```
+
+  When using the Vue adapters, you may also access the errors via the `$page.props.errors` object.
+
+  By default, Inertia's Laravel adapter returns only the first validation error for each field. You may opt-in to receiving all errors by setting the `$withAllErrors` property to `true` in your middleware.
+
+  ```php
+  class HandleInertiaRequests extends Middleware
+  {
+      protected $withAllErrors = true;
+
+      // ...
+  }
+  ```
+
+  When enabled, each field will contain an array of error strings instead of a single string.
+
+  ```vue
+  <p v-for="error in errors.email">{{ error }}</p>
+  ```
+
+  You may configure TypeScript to expect arrays instead of strings in a `global.d.ts` file.
+
+  ```ts
+  declare module '@inertiajs/core' {
+      export interface InertiaConfig {
+          errorValueType: string[]
+      }
+  }
+  ```
+
+  While handling errors in Inertia is similar to full page form submissions, you don't even need to manually repopulate old form input data. Inertia automatically preserves the `component state` for `post`, `put`, `patch`, and `delete` requests. Therefore, all the old form input data remains exactly as it was when the user submitted the form.
+
+  If you're using the `form helper`, it's not necessary to use error bags since validation errors are automatically scoped to the form object making the request.
+
+  For pages that have more than one form, it's possible to encounter conflicts when displaying validation errors if two forms share the same field names. To solve this issue, you can use "error bags". `Error bags` scope the validation errors returned from the server within a unique key specific to that form. For example, you might have a `createCompany` error bag for the first form and a `createUser` error bag for the second form.
+
+  ```js
+  import { router } from '@inertiajs/vue3'
+
+  router.post('/companies', data, {
+      errorBag: 'createCompany',
+  })
+
+  router.post('/users', data, {
+      errorBag: 'createUser',
+  })
+  ```
+
+  Specifying an error bag will cause the validation errors to come back from the server within `page.props.errors.createCompany` and `page.props.errors.createUser`.
 
 - ### **View Transitions**
 
