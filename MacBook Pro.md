@@ -31,6 +31,7 @@
   - Shit + Cmd + . (Period) => Toggle Hidden Files Visibility
 
   - Shift + Cmd + 5 = Screenshot/Record Screen
+  - Shift + Cmd + 4 = Rectangle area to Screenshot/Record Screen, escape to cancel
   - Control + Cmd + Escape = Stop Recording
 
 - VS Code keyword shortcuts

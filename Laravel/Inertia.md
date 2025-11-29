@@ -77,6 +77,31 @@
   });
   ```
 
+  - Configuring Defaults
+
+  ```js
+  createInertiaApp({
+      // ...
+      defaults: {
+          form: {
+              recentlySuccessfulDuration: 5000,
+          },
+          prefetch: {
+              cacheFor: "1m",
+              hoverDelay: 150,
+          },
+          visitOptions: (href, options) => {
+              return {
+                  headers: {
+                      ...options.headers,
+                      "X-Custom-Header": "value",
+                  },
+              };
+          },
+      },
+  });
+  ```
+
 - **$ Variables**
 
   When working with frontend frameworks like Vue.js, you might encounter **variables preceded by a dollar sign ($)**. This convention typically indicates a global or shared variable that is made available to your client-side components.
@@ -471,6 +496,7 @@
     ```jsx
     <Link :href="route('users.create')">Create User</Link>
     ```
+    - [Wayfinder](https://github.com/laravel/wayfinder)
 
 - ### **Title & meta**
 
@@ -1469,6 +1495,45 @@
 
 - ### **File uploads**
 
+  When making Inertia requests that include files (even nested files), Inertia will automatically convert the request data into a FormData object. This conversion is necessary in order to submit a multipart/form-data request via XHR.
+
+  ```jsx
+  <script setup>
+  import { useForm } from '@inertiajs/vue3'
+
+  const form = useForm({
+      name: null,
+      avatar: null,
+  })
+
+  function submit() {
+      form.post('/users')
+  }
+  </script>
+
+  <template>
+      <form @submit.prevent="submit">
+          <input type="text" v-model="form.name" />
+          <input type="file" @input="form.avatar = $event.target.files[0]" />
+          <progress v-if="form.progress" :value="form.progress.percentage" max="100">
+              {{ form.progress.percentage }}%
+          </progress>
+          <button type="submit">Submit</button>
+      </form>
+  </template>
+  ```
+
+  Uploading files using a `multipart/form-data` request is not natively supported in some server-side frameworks when using the `PUT`, `PATCH`, or `DELETE` HTTP methods. The simplest workaround for this limitation is to simply upload files using a POST request and form method spoofing by including a `_method` attribute in the data of your request.
+
+  ```jsx
+  import { router } from '@inertiajs/vue3'
+
+  router.post(`/users/${user.id}`, {
+      _method: 'put',
+      avatar: form.avatar,
+  })
+  ```
+
 - ### **Validation**
 
   Handling server-side validation errors works differently because Inertia never receives `422` responses.
@@ -1559,10 +1624,105 @@
 
 - ### **View Transitions**
 
+  You may enable view transitions for a visit by setting the viewTransition option to true. By default, this will apply a cross-fade transition between pages.
+
+  ```jsx
+  import { router } from '@inertiajs/vue3'
+
+  router.visit('/another-page', { viewTransition: true })
+
+  router.visit('/another-page', {
+      viewTransition: (transition) => {
+          transition.ready.then(() => console.log('Transition ready'))
+          transition.updateCallbackDone.then(() => console.log('DOM updated'))
+          transition.finished.then(() => console.log('Transition finished'))
+      },
+  })
+
+  <Link href="/another-page" view-transition>Navigate</Link>
+
+  <Link
+      href="/another-page"
+      :view-transition="(transition) => transition.finished.then(() => console.log('Done'))"
+  >
+      Navigate
+  </Link>
+  ```
+
+  - Configuring Defaults
+
+  ```jsx
+  import { createInertiaApp } from '@inertiajs/vue3'
+
+  createInertiaApp({
+      // ...
+      defaults: {
+          visitOptions: (href, options) => {
+              return { viewTransition: true }
+          },
+      },
+  })
+  ```
+
+  - Customizing Transitions
+
+  ```css
+  @keyframes fade-in {
+      from { opacity: 0; }
+  }
+  @keyframes fade-out {
+      to { opacity: 0; }
+  }
+  @keyframes slide-from-right {
+      from { transform: translateX(30px); }
+  }
+  @keyframes slide-to-left {
+      to { transform: translateX(-30px); }
+  }
+  ::view-transition-old(root) {
+      animation: 90ms cubic-bezier(0.4, 0, 1, 1) both fade-out,
+      300ms cubic-bezier(0.4, 0, 0.2, 1) both slide-to-left;
+  }
+  ::view-transition-new(root) {
+      animation: 210ms cubic-bezier(0, 0, 0.2, 1) 90ms both fade-in,
+      300ms cubic-bezier(0.4, 0, 0.2, 1) both slide-from-right;
+  }
+  ```
+
+  ```jsx
+  <!-- Profile.vue -->
+  <template>
+      <img src="/avatar.jpg" alt="User" class="avatar-large" />
+  </template>
+
+  <style>
+  .avatar-large {
+      view-transition-name: user-avatar;
+      width: auto;
+      height: 200px;
+  }
+  </style>
+
+  <!-- Dashboard.vue -->
+  <template>
+      <img src="/avatar.jpg" alt="User" class="avatar-small" />
+  </template>
+
+  <style>
+  .avatar-small {
+      view-transition-name: user-avatar;
+      width: auto;
+      height: 40px;
+  }
+  </style>
+  ```
+
 - ## **Data & Props**
 
 - ### **Shared data**
+
   - Server-side
+
   ```php
   class HandleInertiaRequests extends Middleware
   {
@@ -1599,6 +1759,7 @@
   ```
 
   - Client-side
+
   ```js
   import { usePage } from '@inertiajs/react'
 
@@ -1663,15 +1824,453 @@
 
 - ### **Partial reloads**
 
+  When making visits to the same page, it's not always necessary to re-fetch all of the page's data. In fact, selecting only a subset of the data can be a helpful performance optimization. Inertia makes this possible via its "partial reload" feature. Inertia automatically merge the partial data returned from the server with the data it already has in memory client-side. Partial reloads only work for visits made to the same page component.
+
+  ```js
+  import { router } from '@inertiajs/vue3'
+
+  router.visit(url, {
+      only: ['users'], // specify which props the server should return
+  })
+
+  router.visit(url, {
+      except: ['users'], // specify which props the server should exclude
+  })
+
+  router.reload({ only: ['users'] }) // automatically uses the current URL
+
+  <Link href="/users?active=true" :only="['users']">Show active</Link>
+  ```
+
+  - Lazy Data Evaluation (Server Side)
+
+  For partial reloads to be most effective, be sure to also use **lazy data evaluation** when returning props from your **server-side** routes or controllers. This can be accomplished by wrapping all optional page data in a **closure**.
+
+  ```php
+  return Inertia::render('Users/Index', [
+      'users' => fn () => User::all(),
+      'companies' => fn () => Company::all(),
+  ]);
+  ```
+
+  When Inertia performs a request, it will determine which data is required and only then will it evaluate the closure. This can significantly increase the performance of pages that contain a lot of optional data.
+
+  Additionally, Inertia provides an `Inertia::optional()` method to specify that a prop should never be included unless explicitly requested using the `only` option:
+
+  ```php
+  return Inertia::render('Users/Index', [
+      'users' => Inertia::optional(fn () => User::all()),
+  ]);
+  ```
+
+  On the inverse, you can use the `Inertia::always()` method to specify that a prop should always be included, even if it has not been explicitly required in a partial reload.
+
+  ```php
+  return Inertia::render('Users/Index', [
+      'users' => Inertia::always(User::all()),
+  ]);
+  ```
+
 - ### **Deferred props**
+
+  Inertia's deferred props feature allows you to defer the loading of certain page data until after the initial page render. This can be useful for improving the perceived performance of your app by allowing the initial page render to happen as quickly as possible.
+
+  - Server Side
+
+  To defer a prop, you can use the `Inertia::defer()` method when returning your response. This method receives a callback that returns the prop data. The callback will be executed in a **separate request** after the initial page render.
+
+  ```php
+  Route::get('/users', function () {
+      return Inertia::render('Users/Index', [
+          'users' => User::all(),
+          'roles' => Role::all(),
+          'permissions' => Inertia::defer(fn () => Permission::all()),
+      ]);
+  });
+  ```
+
+  By default, all deferred props get fetched in one request after the initial page is rendered, but you can choose to fetch data in parallel by grouping props together.
+
+  ```php
+  Route::get('/users', function () {
+      return Inertia::render('Users/Index', [
+          'users' => User::all(),
+          'roles' => Role::all(),
+          'permissions' => Inertia::defer(fn () => Permission::all()),
+          'teams' => Inertia::defer(fn () => Team::all(), 'attributes'),
+          'projects' => Inertia::defer(fn () => Project::all(), 'attributes'),
+          'tasks' => Inertia::defer(fn () => Task::all(), 'attributes'),
+      ]);
+  });
+  ```
+
+  In the example above, the `teams`, `projects`, and `tasks` props will be fetched in one request, while the `permissions` prop will be fetched in a separate request in parallel. **Group names** are arbitrary strings and can be anything you choose.
+
+  - Client Side
+
+  On the client side, Inertia provides the `Deferred` component to help you manage deferred props. This component will automatically wait for the specified deferred props to be available before rendering its children.
+
+  ```jsx
+  <script setup>
+  import { Deferred } from '@inertiajs/vue3'
+  </script>
+
+  <template>
+      <Deferred data="permissions"> // Could be an array => :data="['teams', 'users']"
+          <template #fallback>
+              <div>Loading...</div>
+          </template>
+
+          <div v-for="permission in permissions">
+              <!-- ... -->
+          </div>
+      </Deferred>
+  </template>
+  ```
 
 - ### **Merging props**
 
 - ### **Polling**
 
+  ```jsx
+  import { usePoll } from '@inertiajs/vue3'
+
+  usePoll(2000)
+
+  // you can pass any of the router.reload options as the second parameter
+  usePoll(2000, {
+    data: {},
+    replace: false,
+    only: [],
+    except: [],
+    headers: {},
+    errorBag: null,
+    forceFormData: false,
+    queryStringArrayFormat: 'brackets',
+    async: false,
+    showProgress: true,
+    fresh: false,
+    reset: [],
+    preserveUrl: false,
+    prefetch: false,
+    viewTransition: false,
+    onCancelToken: cancelToken => {},
+    onCancel: () => {},
+    onBefore: visit => {},
+    onStart: visit => {},
+    onProgress: progress => {},
+    onSuccess: page => {},
+    onError: errors => {},
+    onFinish: visit => {},
+    onPrefetching: () => {},
+    onPrefetched: () => {},
+  })
+  ```
+
+  ```jsx
+  <script setup>
+  import { usePoll } from '@inertiajs/vue3'
+
+  const { start, stop } = usePoll(2000, {}, {
+      autoStart: false,
+  })
+  </script>
+
+  <template>
+      <button @click="start">Start polling</button>
+      <button @click="stop">Stop polling</button>
+  </template>
+  ```
+
 - ### **Prefetching**
 
+  Inertia supports prefetching data for pages that are likely to be visited next. This can be useful for improving the perceived performance of your app by allowing the data to be fetched in the background while the user is still interacting with the current page.
+
+  - Link Prefetching
+
+  You can add the `prefetch` prop to the Inertia link component. By default, Inertia will prefetch the data for the page when the user hovers over the link for more than `75ms`. You may customize this hover delay by setting the `prefetch.hoverDelay` option in your application defaults.
+
+  By default, data is cached for `30 seconds` before being evicted. You may customize this default value by setting the `prefetch.cacheFor` option in your application defaults. You may also customize the cache duration on a per-link basis by passing a `cacheFor` prop to the `Link` component.
+
+  ```jsx
+  import { Link } from '@inertiajs/vue3'
+
+  <Link href="/users" prefetch>Users</Link>
+
+  <Link href="/users" prefetch cache-for="1m">Users</Link>
+  <Link href="/users" prefetch cache-for="10s">Users</Link>
+  <Link href="/users" prefetch :cache-for="5000">Users</Link>
+
+  // you can also start prefetching on `mousedown` by passing the `click` value
+  <Link href="/users" prefetch="click">Users</Link>
+
+  // you can prefetch the data on mount as well
+  <Link href="/users" prefetch="mount">Users</Link>
+  ```
+
+  - Programmatic Prefetching
+
+  You can prefetch data programmatically using `router.prefetch`. This method's signature is identical to `router.visit` with the exception of a third argument that allows you to specify prefetch options. When the `cacheFor` option is not specified, it defaults to 30 seconds.
+
+  ```js
+  router.prefetch(
+      '/users',
+      { method: 'get', data: { page: 2 } },
+  )
+
+  router.prefetch(
+      '/users',
+      { method: 'get', data: { page: 2 } },
+      { cacheFor: '1m' },
+  )
+  ```
+
+  Inertia also provides a `usePrefetch` hook that allows you to track the prefetch state for the current page. It returns information about whether the page is currently prefetching, has been prefetched, when it was last updated, and a `flush` method that flushes the cache for the current page only.
+
+  ```js
+  import { usePrefetch } from '@inertiajs/vue3'
+
+  const { lastUpdatedAt, isPrefetching, isPrefetched, flush } = usePrefetch()
+  ```
+
+  You can also pass visit options when you need to differentiate between different request configurations for the same URL.
+
+  ```js
+  import { usePrefetch } from '@inertiajs/vue3'
+
+  const { lastUpdatedAt, isPrefetching, isPrefetched, flush } = usePrefetch({
+      headers: { 'X-Custom-Header': 'value' }
+  })
+  ```
+
+  - Cache Tags
+
+  Cache tags allow you to group related prefetched data and invalidate all cached data with that tag when specific events occur. To tag cached data, pass a `cacheTags` prop to your `Link` component.
+
+  ```vue
+  <script setup>
+  import { Link } from '@inertiajs/vue3'
+  </script>
+
+  <template>
+      <Link href="/users" prefetch cache-tags="users">Users</Link>
+      <Link href="/dashboard" prefetch :cache-tags="['dashboard', 'stats']">Dashboard</Link>
+  </template>
+  ```
+
+  When prefetching programmatically, pass `cacheTags` in the third argument to `router.prefetch`.
+
+  ```js  theme={null}
+  router.prefetch('/users', {}, { cacheTags: 'users' })
+  router.prefetch('/dashboard', {}, { cacheTags: ['dashboard', 'stats'] })
+  ```
+
+  - Cache Invalidation
+
+  You can manually flush the prefetch cache by calling `router.flushAll` to remove all cached data, or `router.flush` to remove cache for a specific page.
+
+  ```js
+  // Flush all prefetch cache
+  router.flushAll()
+
+  // Flush cache for a specific page
+  router.flush('/users', { method: 'get', data: { page: 2 } })
+
+  // Using the usePrefetch hook
+  const { flush } = usePrefetch()
+
+  // Flush cache for the current page
+  flush()
+
+  // Flush all responses tagged with 'users'
+  router.flushByCacheTags('users')
+
+  // Flush all responses tagged with 'dashboard' OR 'stats'
+  router.flushByCacheTags(['dashboard', 'stats'])
+
+  // flush all cached data on every navigation
+  router.on('navigate', () => router.flushAll())
+  ```
+
+  - Invalidate on Requests
+
+  To automatically invalidate caches when making requests, pass an `invalidateCacheTags` prop to the `Form` component. The specified tags will be flushed when the form submission succeeds.
+
+  ```vue
+  <script setup>
+  import { Form } from '@inertiajs/vue3'
+  </script>
+
+  <template>
+      <Form action="/users" method="post" :invalidate-cache-tags="['users', 'dashboard']">
+          <input type="text" name="name" />
+          <input type="email" name="email" />
+          <button type="submit">Create User</button>
+      </Form>
+  </template>
+  ```
+
+  When using the `useForm` helper, you can include `invalidateCacheTags` in the visit options.
+
+  ```js
+  import { useForm } from '@inertiajs/vue3'
+
+  const form = useForm({
+      name: '',
+      email: '',
+  })
+
+  const submit = () => {
+      form.post('/users', {
+          invalidateCacheTags: ['users', 'dashboard']
+      })
+  }
+  ```
+
+  You can also invalidate cache tags with programmatic visits by including `invalidateCacheTags` in the options.
+
+  ```js
+  router.delete(`/users/${userId}`, {}, {
+      invalidateCacheTags: ['users', 'dashboard']
+  })
+
+  router.post('/posts', postData, {
+      invalidateCacheTags: ['posts', 'recent-posts']
+  })
+  ```
+
+  - Stale While Revalidate
+
+  By default, Inertia will fetch a fresh copy of the data when the user visits the page if the cached data is older than the cache duration. You can customize this behavior by passing a tuple to the `cacheFor`prop.
+
+  The first value in the array represents the number of seconds the cache is considered fresh, while the second value defines how long it can be served as stale data before fetching data from the server is necessary.
+
+  ```vue
+  import { Link } from '@inertiajs/vue3'
+
+  <Link href="/users" prefetch :cacheFor="['30s', '1m']">Users</Link>
+  ```
+
+  - If a request is made within the fresh period (before the first value), the cache is returned immediately without making a request to the server.
+  - If a request is made during the stale period (between the two values), the stale value is served to the user, and a request is made in the background to refresh the cached data. Once the fresh data is returned, it is merged into the page so the user has the most recent data.
+  - If a request is made after the second value, the cache is considered expired, and the page and data is fetched from the sever as a regular request.
+
 - ### **Load when visible**
+
+  Inertia supports lazy loading data on scroll using the **Intersection Observer API**. It provides the `WhenVisible` component as a convenient way to load data when an element becomes visible in the viewport.
+
+  The `WhenVisible` component accepts a `data` prop that specifies the **key of the prop to load**. It also accepts a `fallback` prop that specifies a component to render while the data is loading. The `WhenVisible` component should wrap the component that depends on the data.
+
+  ```jsx
+  <script setup>
+  import { WhenVisible } from '@inertiajs/vue3'
+  </script>
+
+  <template>
+      <WhenVisible data="permissions"> // to load multiple props you can provide an array => :data="['teams', 'users']"
+          <template #fallback>
+              <div>Loading...</div>
+          </template>
+
+          <div v-for="permission in permissions">
+              <!-- ... -->
+          </div>
+      </WhenVisible>
+  </template>
+  ```
+
+  To work properly, you should combine this with `Inertia::optional()` method to specify that a prop will be requested `only` later:
+
+  ```php
+  return Inertia::render('Users/Index', [
+      'permissions' => Inertia::optional(fn () => Permission::all()),
+  ]);
+  ```
+
+  - Loading Before Visible
+
+  If you'd like to start loading data before the element is visible, you can provide a value to the `buffer` prop. The buffer value is the number of pixels before the element is visible.
+
+  ```jsx
+  <script setup>
+  import { WhenVisible } from '@inertiajs/vue3'
+  </script>
+
+  <template>
+      <WhenVisible data="permissions" :buffer="500">
+          <template #fallback>
+              <div>Loading...</div>
+          </template>
+
+          <div v-for="permission in permissions">
+              <!-- ... -->
+          </div>
+      </WhenVisible>
+  </template>
+  ```
+
+  By default, the `WhenVisible` component wraps the fallback template in a `div` element so it can ensure the element is visible in the viewport. If you want to customize the wrapper element, you can provide the `as` prop.
+
+  ```jsx
+  <script setup>
+  import { WhenVisible } from '@inertiajs/vue3'
+  </script>
+
+  <template>
+      <WhenVisible data="products" as="span">
+          <!-- ... -->
+      </WhenVisible>
+  </template>
+  ```
+
+  - Always Trigger
+
+  By default, the `WhenVisible` component will only trigger once when the element becomes visible. If you want to always trigger the data loading when the element is visible, you can provide the `always`prop.
+
+  Note that if the data loading request is already in flight, the component will wait until it is finished to start the next request if the element is still visible in the viewport.
+
+  ```jsx
+  <script setup>
+  import { WhenVisible } from '@inertiajs/vue3'
+  </script>
+
+  <template>
+      <WhenVisible data="products" always>
+          <!-- ... -->
+      </WhenVisible>
+  </template>
+  ```
+
+  - Form Submissions
+
+  When submitting forms, you may want to use the `except` option to exclude the props that are being used by the `WhenVisible` component. This prevents the props from being reloaded when you get redirected back to the current page because of validation errors.
+
+  ```jsx
+  <script setup>
+  import { useForm, WhenVisible } from '@inertiajs/vue3'
+
+  const form = useForm({
+      name: '',
+      email: '',
+  })
+
+  function submit() {
+      form.post('/users', {
+          except: ['permissions'],
+      })
+  }
+  </script>
+
+  <template>
+      <form @submit.prevent="submit">
+          <!-- ... -->
+      </form>
+
+      <WhenVisible data="permissions">
+          <!-- ... -->
+      </WhenVisible>
+  </template>
+  ```
 
 - ### **Infinite Scroll**
 
