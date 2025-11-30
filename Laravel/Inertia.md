@@ -1588,7 +1588,7 @@
 
   When enabled, each field will contain an array of error strings instead of a single string.
 
-  ```vue
+  ```jsx
   <p v-for="error in errors.email">{{ error }}</p>
   ```
 
@@ -1930,6 +1930,129 @@
 
 - ### **Merging props**
 
+  Inertia overwrites props with the same name when reloading a page. However, you may need to merge new data with existing data instead. For example, when implementing a "load more" button for paginated results. The Infinite scroll component uses prop merging under the hood.
+
+  Prop merging only works during `partial reloads`. `Full page visits will always replace props` entirely, even if you've marked them for merging.
+
+  - Merge Methods
+
+  To merge a prop instead of overwriting it, you may use the `Inertia::merge()` method when returning your response.
+
+  ```php
+  Route::get('/items', function () {
+      // Static array of tags...
+      $allTags = [
+          'Laravel', 'React', 'Vue', 'Tailwind', 'Inertia',
+          'PHP', 'JavaScript', 'TypeScript', 'Docker', 'Vite',
+      ];
+
+      // Get chunk of tags by page...
+      $page = request()->input('page', 1);
+      $perPage = 5;
+      $offset = ($page - 1) * $perPage;
+      $tags = array_slice($allTags, $offset, $perPage);
+
+      return Inertia::render('Tags/Index', [
+          'tags' => Inertia::merge($tags),
+      ]);
+  });
+  ```
+
+  The `Inertia::merge()` method will append new items to existing arrays at the root level. You may change this behavior to prepend items instead.
+
+  ```php
+  // Append at root level (default)...
+  Inertia::merge($items);
+
+  // Prepend at root level...
+  Inertia::merge($items)->prepend();
+  ```
+
+  For more precise control, you can target specific nested properties for merging while replacing the rest of the object.
+
+  ```php
+  // Only append to the 'data' array, replace everything else...
+  Inertia::merge(User::paginate())->append('data');
+
+  // Prepend to the 'messages' array...
+  Inertia::merge($chatData)->prepend('messages');
+  ```
+
+  You can combine multiple operations and target several properties at once.
+
+  ```php
+  Inertia::merge($forumData)
+      ->append('posts')
+      ->prepend('announcements');
+
+  // Target multiple properties...
+  Inertia::merge($dashboardData)
+      ->append(['notifications', 'activities']);
+  ```
+
+  - Matching Items
+
+  When merging arrays, you may use the `matchOn` parameter to match existing items by a specific field and update them instead of appending new ones.
+
+  ```php
+  // Match posts by ID, update existing ones...
+  Inertia::merge($postData)->append('data', matchOn: 'id');
+
+  // Multiple properties with different match fields...
+  Inertia::merge($complexData)->append([
+      'users.data' => 'id',
+      'messages' => 'uuid',
+  ]);
+  ```
+
+  - Deep Merge
+
+  Instead of specifying which nested paths should be merged, you may use `Inertia::deepMerge()`to ensure a deep merge of the entire structure.
+
+  ```php
+  Route::get('/chat', function () {
+      $chatData = [
+          'messages' => [
+              ['id' => 4, 'text' => 'Hello there!', 'user' => 'Alice'],
+              ['id' => 5, 'text' => 'How are you?', 'user' => 'Bob'],
+          ],
+          'online' => 12,
+      ];
+
+      return Inertia::render('Chat', [
+          'chat' => Inertia::deepMerge($chatData)->matchOn('messages.id'),
+      ]);
+  });
+  ```
+
+  `Inertia::deepMerge()` was introduced before `Inertia::merge()` had support for prepending and targeting nested paths. In most cases, `Inertia::merge()` with its append and prepend methods should be sufficient.
+
+  - Combining with Deferred Props
+
+  You can also combine `deferred props`] with mergeable props to defer the loading of the prop and ultimately mark it as mergeable once it's loaded.
+
+  ```php
+  Route::get('/users', function () {
+      $page = request()->input('page', 1);
+      $perPage = request()->input('per_page', 10);
+
+      return Inertia::render('Users/Index', [
+          'results' => Inertia::defer(fn() => User::paginate($perPage, page: $page))->deepMerge(),
+      ]);
+  });
+  ```
+
+  - Resetting Props
+
+  On the client side, you can indicate to the server that you would like to reset the prop. This is useful when you want to clear the prop value before merging new data, such as when the user enters a new search query on a paginated list. The `reset` request option accepts an array of the props keys you would like to reset.
+
+  ```js
+  router.reload({
+      reset: ['results'],
+      // ...
+  })
+  ```
+
 - ### **Polling**
 
   ```jsx
@@ -2047,7 +2170,7 @@
 
   Cache tags allow you to group related prefetched data and invalidate all cached data with that tag when specific events occur. To tag cached data, pass a `cacheTags` prop to your `Link` component.
 
-  ```vue
+  ```jsx
   <script setup>
   import { Link } from '@inertiajs/vue3'
   </script>
@@ -2060,7 +2183,7 @@
 
   When prefetching programmatically, pass `cacheTags` in the third argument to `router.prefetch`.
 
-  ```js  theme={null}
+  ```js
   router.prefetch('/users', {}, { cacheTags: 'users' })
   router.prefetch('/dashboard', {}, { cacheTags: ['dashboard', 'stats'] })
   ```
@@ -2096,7 +2219,7 @@
 
   To automatically invalidate caches when making requests, pass an `invalidateCacheTags` prop to the `Form` component. The specified tags will be flushed when the form submission succeeds.
 
-  ```vue
+  ```jsx
   <script setup>
   import { Form } from '@inertiajs/vue3'
   </script>
@@ -2145,7 +2268,7 @@
 
   The first value in the array represents the number of seconds the cache is considered fresh, while the second value defines how long it can be served as stale data before fetching data from the server is necessary.
 
-  ```vue
+  ```jsx
   import { Link } from '@inertiajs/vue3'
 
   <Link href="/users" prefetch :cacheFor="['30s', '1m']">Users</Link>
@@ -2241,6 +2364,44 @@
   </template>
   ```
 
+  Always could be associated to a prop or computed value. You can pass the prop `params`, a object containing the parameters to send with the request. These parameters are the same as what you would normally pass to router.reload.
+
+  ```
+  params="{
+    data: {},
+    only: [],
+    except: [],
+    headers: {},
+    onError: errors => {},
+  }"
+  ```
+
+  ```jsx
+  <script setup>
+  import { WhenVisible, computed } from '@inertiajs/vue3'
+
+  const reachedEnd = computed(() => {
+    return props.pagination.current_page >= pros.pagination.last_page;
+  });
+  </script>
+
+  <template>
+    <WhenVisible
+      :always="!reachedEnd"
+      :params="{
+        only: ['courses', 'pagination'],
+        data: {
+          page: pagination.current_page + 1
+        }
+      }"
+      >
+      <template #fallback>
+        <span>Loading more...</span>
+      </template>
+    </WhenVisible>
+  </template>
+  ```
+
   - Form Submissions
 
   When submitting forms, you may want to use the `except` option to exclude the props that are being used by the `WhenVisible` component. This prevents the props from being reloaded when you get redirected back to the current page because of validation errors.
@@ -2274,17 +2435,416 @@
 
 - ### **Infinite Scroll**
 
+  - Server-Side
+
+  You should use the `Inertia::scroll()`method when returning your response. This method automatically configures the proper merge behavior and normalizes pagination metadata for the frontend component.
+
+  ```php
+  Route::get('/users', function () {
+      return Inertia::render('Users/Index', [
+          'users' => Inertia::scroll(fn () => User::paginate())
+      ]);
+  });
+  ```
+
+  - Client-Side
+
+  Inertia provides the `<InfiniteScroll>` component to automatically load additional pages of content. The component accepts a `data` prop that specifies the key of the prop containing your paginated data. The `<InfiniteScroll>` component should wrap the content that depends on the paginated data.
+
+  ```jsx
+  <script setup>
+  import { InfiniteScroll } from '@inertiajs/vue3'
+
+  defineProps(['users'])
+  </script>
+
+  <template>
+      <InfiniteScroll data="users">
+          <div v-for="user in users.data" :key="user.id">
+              {{ user.name }}
+          </div>
+      </InfiniteScroll>
+  </template>
+  ```
+
+  The component uses [intersection observers ](https://developer.mozilla.org/en-US/docs/Web/API/Intersection_Observer_API) to detect when users scroll near the end of the content and automatically triggers requests to load the next page. New data is merged with existing content rather than replacing it.
+
+  - Loading Buffer
+
+  You can control how early content begins loading by setting a buffer distance. The buffer specifies how many pixels before the end of the content loading should begin.
+
+  ```jsx
+  <InfiniteScroll data="users" :buffer="500">
+      <!-- ... -->
+  </InfiniteScroll>
+  ```
+
+  - URL Synchronization
+
+  The infinite scroll component updates the browser URL's query string (`?page=...`) as users scroll through content. The URL reflects which page has the most visible items on screen, updating in both directions as users scroll up or down. This allows users to bookmark or share links to specific pages. You can disable this behavior to maintain the original page URL.
+
+  ```jsx
+  <InfiniteScroll data="users" preserve-url>
+      <!-- ... -->
+  </InfiniteScroll>
+  ```
+
+  This is useful when infinite scroll is used for secondary content that shouldn't affect the main page URL, such as comments on a blog post or related products on a product page.
+
+  - Resetting
+
+  When filters or other parameters change, you may need to reset the infinite scroll data to start from the beginning. Without resetting, new results will merge with existing content instead of replacing it. You can reset data using the `reset` visit option.
+
+  ```jsx
+  <script setup>
+  import { router } from '@inertiajs/vue3'
+
+  const show = (role) => {
+      router.visit(route('users'), {
+          data: { filter: { role } },
+          only: ['users'],
+          reset: ['users'],
+      })
+  }
+  </script>
+
+  <template>
+      <button @click="show('admin')">Show admins</button>
+      <button @click="show('customer')">Show customers</button>
+
+      <InfiniteScroll data="users">
+          <div v-for="user in users.data" :key="user.id">
+              {{ user.name }}
+          </div>
+      </InfiniteScroll>
+  </template>
+  ```
+
+  - Loading Direction
+
+  The infinite scroll component loads content in both directions when you scroll near the start or end. You can control this behavior using the `only-next` and `only-previous` props.
+
+  ```jsx
+  <!-- Only load the next page -->
+  <InfiniteScroll data="users" only-next>
+      <!-- ... -->
+  </InfiniteScroll>
+
+  <!-- Only load the previous page -->
+  <InfiniteScroll data="messages" only-previous>
+      <!-- ... -->
+  </InfiniteScroll>
+
+  <!-- Load in both directions (default) -->
+  <InfiniteScroll data="posts">
+      <!-- ... -->
+  </InfiniteScroll>
+  ```
+
+  - Reverse Mode
+
+  For chat applications, timelines, or interfaces where content is sorted descendingly (newest items at the bottom), you can enable reverse mode. This configures the component to load older content when scrolling upward.
+
+  ```jsx
+  <InfiniteScroll data="messages" reverse>
+      <!-- ... -->
+  </InfiniteScroll>
+  ```
+
+  In reverse mode, the component flips the loading directions so that scrolling up loads the next page (older content) and scrolling down loads the previous page (newer content). The component handles the loading positioning, but you are responsible for reversing your content to display in the correct order.
+
+  Reverse mode also enables automatic scrolling to the bottom on initial load, which you can disable with `:auto-scroll="false"`.
+
+  ```jsx
+  <InfiniteScroll data="messages" reverse :auto-scroll="false">
+      <!-- ... -->
+  </InfiniteScroll>
+  ```
+
+  - Default Slot
+
+  The main content area where you render your data items. This slot receives loading state information.
+
+  ```jsx
+  <InfiniteScroll data="users" #default="{ loading, loadingPrevious, loadingNext }">
+      <!-- Your content with access to loading states -->
+  </InfiniteScroll>
+  ```
+  - Loading Slot
+
+  The loading slot is used as a fallback when loading content and no custom `before` or `after` slots are provided. This creates a default loading indicator.
+
+  ```jsx
+  <template>
+      <InfiniteScroll data="users">
+          <!-- Your content -->
+
+          <template #loading>
+              Loading more users...
+          </template>
+      </InfiniteScroll>
+  </template>
+  ```
+
+  - Previous and Next Slots
+
+  The `previous` and `next` slots are rendered above and below the main content, typically used for manual load controls. These slots receive several properties including loading states, fetch functions, and mode indicators.
+
+  ```jsx
+  <template>
+      <InfiniteScroll data="users" :manual-after="3">
+          <template #previous="{ loading, fetch, hasMore, manualMode }">
+              <button v-if="manualMode && hasMore" @click="fetch" :disabled="loading">
+                  {{ loading ? 'Loading...' : 'Load previous' }}
+              </button>
+          </template>
+
+          <!-- Your content -->
+
+          <template #next="{ loading, fetch, hasMore, manualMode }">
+              <button v-if="manualMode && hasMore" @click="fetch" :disabled="loading">
+                  {{ loading ? 'Loading...' : 'Load more' }}
+              </button>
+          </template>
+      </InfiniteScroll>
+  </template>
+  ```
+
+  The `loading`, `previous`, and `next` slots receive the following properties:
+
+  | Property          | Description                                    |
+  | :---------------- | :--------------------------------------------- |
+  | `loading`         | Whether the slot is currently loading content  |
+  | `loadingPrevious` | Whether previous content is loading            |
+  | `loadingNext`     | Whether next content is loading                |
+  | `fetch`           | Function to trigger loading for the slot       |
+  | `hasMore`         | Whether more content is available for the slot |
+  | `hasPrevious`     | Whether more previous content is available     |
+  | `hasNext`         | Whether more next content is available         |
+  | `manualMode`      | Whether manual mode is active                  |
+  | `autoMode`        | Whether automatic loading is active            |
+
+  - Custom Element
+
+  The `InfiniteScroll` component renders as a `<div>` element. You may customize this to use any HTML element using the `as` prop.
+
+  ```jsx
+  <template>
+      <InfiniteScroll data="products" as="ul">
+          <li v-for="product in products.data" :key="product.id">
+              {{ product.name }}
+          </li>
+      </InfiniteScroll>
+  </template>
+  ```
+
+  - Scroll Containers
+
+  The infinite scroll component works within any scrollable container, not just the main document. The component automatically adapts to use the custom scroll container for trigger detection and calculations instead of the main document scroll.
+
+  ```jsx
+  <template>
+      <div style="height: 400px; overflow-y: auto;">
+          <InfiniteScroll data="users">
+              <div v-for="user in users.data" :key="user.id">
+                  {{ user.name }}
+              </div>
+          </InfiniteScroll>
+      </div>
+  </template>
+  ```
+
+  - Multiple Scroll Containers
+
+  Sometimes you may need to render multiple infinite scroll components on a single page. However, if both components use the default `page` query parameter for URL synchronization, they will conflict with each other. To resolve this, instruct each paginator to use a custom `pageName`.
+
+  ```php
+  Route::get('/dashboard', function () {
+      return Inertia::render('Dashboard', [
+          'users' => Inertia::scroll(
+              fn() => User::paginate(pageName: 'users')
+          ),
+          'orders' => Inertia::scroll(
+              fn() => Order::paginate(pageName: 'orders')
+          ),
+      ]);
+  });
+  ```
+
+  The `Inertia::scroll()` method automatically detects the `pageName` from each paginator, allowing both scroll containers to maintain independent pagination state. This results in URLs like `?users=2&orders=3` instead of conflicting `?page=` parameters.
+
+  For more information about pagination page names, see [Laravel's documentation](https://laravel.com/docs/pagination#multiple-paginator-instances-per-page).
+
 - ### **Remembering state**
+
+  When navigating browser history, Inertia restores pages using prop data cached in history state. However, Inertia does not restore local page component state. For example, if a user partially completes a form, then navigates away, and then returns back, the form will be reset and their work will be lost. To mitigate this issue, you can tell Inertia which local component state to save in the browser history.
+
+  - Saving Local State
+
+  To save local component state to the history state, use the `useRemember` feature to tell Inertia which data it should remember.
+
+  ```jsx
+  import { useRemember } from '@inertiajs/vue3'
+
+  const form = useRemember({
+      first_name: null,
+      last_name: null,
+  })
+  ```
+
+  Now, whenever your local `form` state changes, Inertia will automatically save this data to the history state and will also restore it on history navigation.
+
+  - Multiple Components
+
+  If your page contains multiple components that use the remember functionality provided by Inertia, you need to provide a unique key for each component so that Inertia knows which data to restore to each component.
+
+  ```jsx
+  import { useRemember } from '@inertiajs/vue3'
+
+  const form = useRemember({
+      first_name: null,
+      last_name: null,
+  }, 'Users/Create')
+  ```
+
+  If you have multiple instances of the same component on the page using the remember functionality, be sure to also include a unique key for each component instance, such as a model identifier.
+
+  ```jsx
+  import { useRemember } from '@inertiajs/vue3'
+
+  const props = defineProps({ user: Object })
+
+  const form = useRemember({
+      first_name: null,
+      last_name: null,
+  }, `Users/Edit:${props.user.id}`)
+  ```
+
+  - Form Helper
+
+  If you're using the Inertia form helper, you can pass a unique form key as the first argument when instantiating your form. This will cause the form data and errors to automatically be remembered.
+
+  ```jsx
+  import { useForm } from '@inertiajs/vue3'
+
+  const form = useForm('CreateUser', data)
+  const form = useForm(`EditUser:${props.user.id}`, data)
+  ```
+
+  - Manually Saving State
+
+  ```jsx
+  import { router } from '@inertiajs/vue3'
+
+  // Save local component state to history state
+  router.remember(data, 'my-key')
+
+  // Restore local component state from history state
+  let data = router.restore('my-key')
+  ```
 
 - ## **Security**
 
 - ### **Authentication**
 
+  This is managed by the server-side framework.
+
 - ### **Authorization**
+
+  It is handled by the server-side authorization policies. However, you may be wondering how to perform checks against your authorization policies from within your Inertia page components since you won't have access to your framework's server-side helpers. The simplest approach to solving this problem is to pass the results of your authorization checks as props to your page components.
+
+  ```php
+  class UsersController extends Controller
+  {
+      public function index()
+      {
+          return Inertia::render('Users/Index', [
+              'can' => [
+                  'create_user' => Auth::user()->can('create', User::class),
+              ],
+              'users' => User::all()->map(function ($user) {
+                  return [
+                      'first_name' => $user->first_name,
+                      'last_name' => $user->last_name,
+                      'email' => $user->email,
+                      'can' => [
+                          'edit_user' => Auth::user()->can('edit', $user),
+                      ]
+                  ];
+              }),
+          ]);
+      }
+  }
+  ```
 
 - ### **CSRF protection**
 
+  Laravel automatically includes the proper CSRF token when making requests via Inertia or Axios. However, if you’re using Laravel, be sure to omit the csrf-token meta tag from your project, as this will prevent the CSRF token from refreshing properly.
+
+  Axios includes a CSRF functionality. Axios is the HTTP library that Inertia uses under the hood.
+  Axios automatically checks for the existence of an XSRF-TOKEN cookie. If it’s present, it will then include the token in an X-XSRF-TOKEN header for any requests it makes.
+
+  The easiest way to implement this is using server-side middleware. Simply include the XSRF-TOKENcookie on each response, and then verify the token using the X-XSRF-TOKEN header sent in the requests from axios.
+
 - ### **History encryption**
+
+  Imagine a scenario where your user is authenticated, browses privileged information on your site, then logs out. If they press the back button, they can still see the privileged information that is stored in the window's history state. This is a security risk. To prevent this, Inertia.js provides a history encryption feature.
+
+  - How It Works
+
+  When you instruct Inertia to encrypt your app's history, it uses the browser's built-in [`crypto` api ](https://developer.mozilla.org/en-US/docs/Web/API/Crypto) to encrypt the current page's data before pushing it to the history state. We store the corresponding key in the browser's session storage. When the user navigates back to a page, we decrypt the data using the key stored in the session storage.
+
+  Once you instruct Inertia to clear your history state, we simply clear the existing key from session storage roll a new one. If we attempt to decrypt the history state with the new key, it will fail and Inertia will make a fresh request back to your server for the page data.
+
+  History encryption relies on `window.crypto.subtle` which is only available in secure environments (sites with SSL enabled).
+
+  - Opting in
+
+  History encryption is an opt-in feature. There are several methods for enabling it:
+
+  - Global Encryption
+
+  If you'd like to enable history encryption globally, set the `inertia.history.encrypt` config value to `true`.
+
+  You are able to opt out of encryption on specific pages by calling the `Inertia::encryptHistory()`method before returning the response.
+
+  ```php
+  Inertia::encryptHistory(false);
+  ```
+
+  - Per-request Encryption
+
+  To encrypt the history of an individual request, simply call the `Inertia::encryptHistory()` method before returning the response.
+
+  ```php
+  Inertia::encryptHistory();
+  ```
+
+  - Encrypt Middleware
+
+  To encrypt a group of routes, you may use Inertia's included `EncryptHistory` middleware.
+
+  ```php
+  Route::middleware([Inertia\Middleware\EncryptHistory::class])->get('/', function() {
+      //
+  });
+
+  Route::middleware(['inertia::encrypt'])->get('/', function() {
+      //
+  });
+  ```
+
+  - Clearing History
+
+  To clear the history state, you can call the `Inertia::clearHistory()` method before returning the response.
+
+  ```php
+  Inertia::clearHistory();
+  ```
+
+  Once the response has rendered on the client, the encryption key will be rotated, rendering the previous history state unreadable.
+
+  You can also clear history on the client site by calling `router.clearHistory()`.
 
 - ## **Advanced**
 
@@ -2322,7 +2882,137 @@
 
 - ### **Error handling**
 
+  ```php
+  use Illuminate\Http\Request;
+  use Symfony\Component\HttpFoundation\Response;
+  use Inertia\Inertia;
+
+  ->withExceptions(function (Exceptions $exceptions) {
+      $exceptions->respond(function (Response $response, Throwable $exception, Request $request) {
+          if (! app()->environment(['local', 'testing']) && in_array($response->getStatusCode(), [500, 503, 404, 403])) {
+              return Inertia::render('ErrorPage', ['status' => $response->getStatusCode()])
+                  ->toResponse($request)
+                  ->setStatusCode($response->getStatusCode());
+          }
+
+          if ($response->getStatusCode() === 419) {
+              return back()->with([
+                  'message' => 'The page expired, please try again.',
+              ]);
+          }
+
+          return $response;
+      });
+  })
+  ```
+
 - ### **Events**
+
+  ```jsx
+  import { router } from '@inertiajs/vue3'
+
+  router.on('start', (event) => {
+      console.log(`Starting a visit to ${event.detail.visit.url}`)
+  })
+
+  document.addEventListener('inertia:start', (event) => {
+      console.log(`Starting a visit to ${event.detail.visit.url}`)
+  })
+
+  let removeStartEventListener = router.on('start', (event) => {
+      console.log(`Starting a visit to ${event.detail.visit.url}`)
+  })
+
+  // Remove the listener...
+  removeStartEventListener()
+
+  onUnmounted(
+      router.on('start', (event) => {
+          console.log(`Starting a visit to ${event.detail.visit.url}`)
+      })
+  )
+
+  let startEventListener = (event) => {
+      console.log(`Starting a visit to ${event.detail.visit.url}`)
+  }
+
+  document.addEventListener('inertia:start', startEventListener)
+
+  // Remove the listener...
+  document.removeEventListener('inertia:start', startEventListener)
+
+  router.on('before', (event) => {
+      if (!confirm('Are you sure you want to navigate away?')) {
+          event.preventDefault()
+      }
+  })
+
+  router.on('before', (event) => {
+      // cancel the event by returning false
+      return confirm('Are you sure you want to navigate away?')
+  })
+
+  router.on('before', (event) => {
+      console.log(`About to make a visit to ${event.detail.visit.url}`)
+  })
+
+  router.on('before', (event) => {
+      return confirm('Are you sure you want to navigate away?')
+  })
+
+  router.on('start', (event) => {
+      console.log(`Starting a visit to ${event.detail.visit.url}`)
+  })
+
+  router.on('progress', (event) => {
+      this.form.progress = event.detail.progress.percentage
+  })
+
+  router.on('success', (event) => {
+      console.log(`Successfully made a visit to ${event.detail.page.url}`)
+  })
+
+  router.on('error', (errors) => {
+      console.log(errors)
+  })
+
+  router.on('invalid', (event) => {
+      console.log(`An invalid Inertia response was received.`)
+      console.log(event.detail.response)
+  })
+
+  router.on('invalid', (event) => {
+      event.preventDefault()
+
+      // Handle the invalid response yourself...
+  })
+
+  router.on('exception', (event) => {
+      console.log(`An unexpected error occurred during an Inertia visit.`)
+      console.log(event.detail.error)
+  })
+
+  router.on('exception', (event) => {
+      event.preventDefault()
+      // Handle the error yourself
+  })
+
+  router.on('finish', (event) => {
+      NProgress.done()
+  })
+
+  router.on('navigate', (event) => {
+      console.log(`Navigated to ${event.detail.page.url}`)
+  })
+
+  router.on('prefetching', (event) => {
+      console.log(`Prefetching ${event.detail.page.url}`)
+  })
+
+  router.on('prefetched', (event) => {
+      console.log(`Prefetched ${event.detail.page.url}`)
+  })
+  ```
 
 - ### **Progress indicators**
 
@@ -2438,3 +3128,37 @@
 - ### **Server-side rendering**
 
 - ### **Testing**
+
+  ```php
+  use Inertia\Testing\AssertableInertia as Assert;
+
+  class PodcastsControllerTest extends TestCase
+  {
+      public function test_can_view_podcast()
+      {
+          $this->get('/podcasts/41')
+              ->assertInertia(fn (Assert $page) => $page
+                  ->component('Podcasts/Show')
+                  ->has('podcast', fn (Assert $page) => $page
+                      ->where('id', $podcast->id)
+                      ->where('subject', 'The Laravel Podcast')
+                      ->where('description', 'The Laravel Podcast brings you Laravel and PHP development news and discussion.')
+                      ->has('seasons', 4)
+                      ->has('seasons.4.episodes', 21)
+                      ->has('host', fn (Assert $page) => $page
+                          ->where('id', 1)
+                          ->where('name', 'Matt Stauffer')
+                      )
+                      ->has('subscribers', 7, fn (Assert $page) => $page
+                          ->where('id', 2)
+                          ->where('name', 'Claudio Dekker')
+                          ->where('platform', 'Apple Podcasts')
+                          ->etc()
+                          ->missing('email')
+                          ->missing('password')
+                      )
+                  )
+              );
+      }
+  }
+  ```
