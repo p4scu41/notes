@@ -5,6 +5,7 @@ code --install-extension codeium.codeium
 code --install-extension dbaeumer.vscode-eslint
 code --install-extension dbankier.vscode-quick-select
 code --install-extension deque-systems.vscode-axe-linter
+code --install-extension DEVSENSE.composer-php-vscode
 code --install-extension dsznajder.es7-react-js-snippets
 code --install-extension eamodio.gitlens
 code --install-extension editorconfig.editorconfig
