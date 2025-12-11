@@ -92,6 +92,9 @@
   "typescript.preferences.quoteStyle": "single",
   "typescript.updateImportsOnFileMove.enabled": "always",
   "window.title": "${dirty}${activeFolderMedium}${separator}${rootName}${separator}${profileName}${separator}${activeRepositoryBranchName}",
+  "workbench.colorCustomizations": {
+    "tab.activeBackground":"#252825"
+  },
   "workbench.editor.closeOnFileDelete": true,
   "workbench.editor.highlightModifiedTabs": true,
   "workbench.editor.wrapTabs": true,
