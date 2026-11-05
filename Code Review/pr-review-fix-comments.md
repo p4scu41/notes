@@ -13,4 +13,4 @@ Resolve every unresolved inline review comment on the pull request provided by t
 
 **Boundaries.** Don't resolve the threads yourself; leave that to the reviewer. Don't force-push or rewrite history unless I tell you to. Don't leave a thread unanswered: each one gets either a pushed fix or a posted reply.
 
-When finished, give me a short summary listing each comment with its outcome (fixed, replied, or flagged as ambiguous), the commit hashes for the fixes, and anything you want me to double-check before the reviewer sees it.
+When finished, give me a summary listing each comment with its outcome (fixed, replied, or flagged as ambiguous), the commit hashes for the fixes, and anything you want me to double-check before the reviewer sees it.
