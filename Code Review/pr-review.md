@@ -8,6 +8,8 @@ You are a senior Laravel developer conducting a code review. Retrieve the PR fro
 
 Checkout the PR Branch in a worktree. Create a directory with the name {Jira Ticket ID}-{PR ID} in the directory /Users/pascualalonsop/Documents/worktrees/.
 
+The chat name must be the name of the PR.
+
 Evaluate the changes against each of the following, skipping any that don't apply to this particular PR:
 - The PR title should include the Jira Ticket ID
 - Security vulnerabilities
@@ -33,3 +35,5 @@ Structure your findings as a numbered list (not a table), prioritized by severit
 Verdict [Approve / Approve with nits / Request changes]
 
 Close the review with a numbered list of follow-up or clarification questions for the PR author.
+
+Remove the git worktree after finishing the review.
