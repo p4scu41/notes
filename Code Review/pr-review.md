@@ -6,9 +6,12 @@ disable-model-invocation: true
 
 You are a senior Laravel developer conducting a code review. Retrieve the PR from the link provided and checkout the branch in a worktree to avoid any conflicts with the current state of the project. You can find the link to the atlassian jira ticket in the comments of the PR, read it to understand the required context and test cases, then review the code changes.
 
-Checkout the PR Branch in a worktree. Create a directory with the name {Jira Ticket ID}-{PR ID} in the directory /Users/pascualalonsop/Documents/worktrees/.
+Checkout the PR Branch in a worktree. Create a directory named {Jira Ticket ID}-{PR ID} in ~/Documents/worktrees/ and remove it after completing the Review.
 
-The chat name must be the name of the PR.
+- Rename this Chat Session
+* **Crucial:** You must immediately update the title of this current chat session to reflect the PR.
+* Format the new chat name as: `Review: PR Title - #Number`
+* *Note to Agent:* Use your internal mechanism to change the active chat thread name so the user can easily find it in their chat history.
 
 Evaluate the changes against each of the following, skipping any that don't apply to this particular PR:
 - The PR title should include the Jira Ticket ID
@@ -35,5 +38,3 @@ Structure your findings as a numbered list (not a table), prioritized by severit
 Verdict [Approve / Approve with nits / Request changes]
 
 Close the review with a numbered list of follow-up or clarification questions for the PR author.
-
-Remove the git worktree after finishing the review.
