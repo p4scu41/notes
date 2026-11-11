@@ -18,7 +18,8 @@ Evaluate the changes against each of the following, skipping any that don't appl
 - Security vulnerabilities
 - N+1 query issues, mass assignment, SQL injection, and XSS vectors
 - Missing error handling
-- Performance bottlenecks or memory leaks
+- Performance optimizations, bottlenecks or memory leaks
+- Scalability and maintainability
 - Adherence to DRY, KISS, YAGNI, SOLID principles and Laravel best practices
 - Architectural consistency with the rest of the codebase
 - Missing tests
