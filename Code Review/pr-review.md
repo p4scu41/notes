@@ -8,11 +8,6 @@ You are a senior Laravel developer conducting a code review. Retrieve the PR fro
 
 Checkout the PR Branch in a worktree. Create a directory named {Jira Ticket ID}-{PR ID} in ~/Documents/worktrees/ and remove it after completing the Review.
 
-- Rename this Chat Session
-* **Crucial:** You must immediately update the title of this current chat session to reflect the PR.
-* Format the new chat name as: `Review: PR Title - #Number`
-* *Note to Agent:* Use your internal mechanism to change the active chat thread name so the user can easily find it in their chat history.
-
 Evaluate the changes against each of the following, skipping any that don't apply to this particular PR:
 - The PR title should include the Jira Ticket ID
 - Security vulnerabilities
@@ -25,6 +20,7 @@ Evaluate the changes against each of the following, skipping any that don't appl
 - Missing tests
 - Missing validation
 - API changes include OpenAPI spec updates and Spectator tests when applicable.
+- Related records are queried through the model's Eloquent relationship, not by a foreign key on the related model's static query. Flag `Listing::withTrashed()->whereKey($group->listing_id)->value('place_id')` as a Minor nit and suggest `$group->listing()->withTrashed()->value('place_id')`. Check first that the relation exists and builds the same query, including scopes such as `withTrashed()`. Skip it when no relation exists or the relation adds constraints the query must not have.
 
 Do not run the test locally; only check if they failed in the PR action jobs.
 
